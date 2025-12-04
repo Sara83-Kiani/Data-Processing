@@ -1,0 +1,13 @@
+#Specific project name
+COMPOSE_PROJECT_NAME="data_processing"
+
+# Environment Variables for database.
+DB_SERVER="mysql"
+DB_ROOT_USER="root"
+DB_ROOT_PASSWORD="qwerty"
+DB_NAME="mydb"
+DB_PORT=3306
+
+# Nest.js
+APP_PORT=3000
+NODE_ENV=development
