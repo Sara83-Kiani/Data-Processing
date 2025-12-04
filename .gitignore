@@ -1,2 +1,2 @@
-.envTEMPLATE
-docker-compose.yamlTEMPLATE
+.env
+docker-compose.yaml
