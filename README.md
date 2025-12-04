@@ -32,8 +32,9 @@ This section is for the people that want to run our web-application in a docker-
 ### Running
 
 1. Download the archive containing the necessary files.
-2. Extract the files to the docker folder structure  in which you will start our project. (The project files should be placed into the /app/public directory)
-3. Change the filename of ".env.TEMPLATE" into ".env", change the database details to your own settings.
+2. Create an empty folder called "mysqldata"
+3. Change the filename of "docker-compose.yamlTEMPLATE" into "docker-compose.yaml".
+4. Change the filename of ".env.TEMPLATE" into ".env", change the database details to your own settings.
 
 ``` .env 
 #Specific project name
@@ -45,16 +46,12 @@ DB_ROOT_USER="your_database_user"
 DB_ROOT_PASSWORD="your_database_password"
 
 ```
-
-4. Move the "docker-compose.yaml.TEMPLATE" file into your docker-container. Change the name into "docker-compose.yaml".
-5. Move the ".env" file into your docker-container. It needs to be in the same folder where your "docker-compose.yaml" is.
-6. Open your prefered terminal/console in the project folder and execute "docker-compose up" in your console.
+5. Open your prefered terminal/console in the project folder and execute "docker compose up --build" in your console.
 
 ``` Powershell
-docker-compose up
+docker compose up --build
 ```
-6. Wait a few seconds till the docker-container is running. (First time you docker-compose up your it will take a moment)
-7. Open X, enter your database login data you set in step 3. to login.
-8. Import the "x.SQL" in X. Check if the database appears on the left side of the screen
-9. Go to X  in your favorite browser.
-12. Enjoy
+6. Wait a few seconds till the docker-container is running. (First time you docker compose up --build it will take a moment.)
+7. Open ???, enter your database login data you set in step 4 to login.
+9. Go to ??? in your favorite browser.
+12. Enjoy!
