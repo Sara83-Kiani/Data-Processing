@@ -19,6 +19,8 @@ StreamFlix is a Netflix-like streaming service API built with NestJS, TypeORM, a
 - **Database Schema**: Comprehensive MySQL database with 15 tables including proper foreign keys, indexes, and relationships
 - **RESTful API**: Clean endpoint structure following REST principles with proper HTTP methods and status codes
 - **Object-Oriented Design**: All entities use proper OOP principles with private fields, getters/setters, and business logic methods
+- **XML Support**: Content negotiation - API responds with JSON or XML based on Accept header
+- **Sample Data**: Comprehensive test data including 10 movies, 5 series, 10 genres, and user accounts
 
 ### API Endpoints Available
 
@@ -91,10 +93,18 @@ You'll need Docker installed on your machine:
    ```
    The first build takes a few minutes. Wait until you see:
    ```
-   🚀 StreamFlix API is running on: http://localhost:3000
+   StreamFlix API is running on: http://localhost:3000
    ```
 
-6. **Access the services**
+6. **Import sample data** (optional but recommended)
+   - Go to http://localhost:8080 (phpMyAdmin)
+   - Login with root/rootpassword
+   - Select `mydb` database
+   - Go to Import tab
+   - Choose `db-init/sample_data.sql`
+   - Click Go
+
+7. **Access the services**
    - **API**: http://localhost:3000
    - **phpMyAdmin**: http://localhost:8080 (login with root/rootpassword)
 
@@ -126,14 +136,18 @@ Invoke-RestMethod -Uri "http://localhost:3000/auth/login" -Method Post -Body $bo
 
 **Browse content:**
 ```powershell
-# Get all movies
+# Get all movies (JSON)
 Invoke-RestMethod -Uri "http://localhost:3000/content/movies"
+
+# Get all movies (XML)
+$headers = @{ "Accept" = "application/xml" }
+Invoke-RestMethod -Uri "http://localhost:3000/content/movies" -Headers $headers
 
 # Get all genres
 Invoke-RestMethod -Uri "http://localhost:3000/content/genres"
 
 # Search movies
-Invoke-RestMethod -Uri "http://localhost:3000/content/movies/search?q=action"
+Invoke-RestMethod -Uri "http://localhost:3000/content/movies/search?q=matrix"
 ```
 
 ### Using Your Browser
@@ -191,19 +205,20 @@ Data-Processing/
 ## Development Notes
 
 ### What's Working
-✅ User registration with email validation  
-✅ Secure login with JWT tokens  
-✅ Content browsing (movies, series, episodes)  
-✅ Age-based content filtering  
-✅ Search functionality  
-✅ Proper database relationships and constraints  
-✅ OOP design patterns in all entities  
+- User registration with email validation  
+- Secure login with JWT tokens  
+- Content browsing (movies, series, episodes)  
+- Age-based content filtering  
+- Search functionality  
+- Proper database relationships and constraints  
+- OOP design patterns in all entities
+- XML and JSON response formats (content negotiation)
+- Sample data for testing and demonstration  
 
 ### What's Next
 - Profile management endpoints (create, update, delete profiles)
 - Watchlist functionality (add/remove content)
 - Watch history tracking with resume position
-- XML response format support
 - Database views and stored procedures
 - Role-based access control
 
@@ -221,7 +236,10 @@ If port 3000 or 3306 is taken, modify the ports in `docker-compose.yaml`
 Make sure you've selected the correct database (`mydb`) in phpMyAdmin before importing
 
 **API returns empty arrays?**  
-The database starts empty. You need to add sample data through phpMyAdmin or SQL inserts
+Import the sample data: In phpMyAdmin, select `mydb` database, go to Import tab, and import `db-init/sample_data.sql`
+
+**Want to reset the database?**  
+Re-import `sample_data.sql` - it will clear existing data and insert fresh sample data
 
 ---
 
@@ -229,4 +247,4 @@ The database starts empty. You need to add sample data through phpMyAdmin or SQL
 
 For questions or issues, contact any of the group members listed above.
 
-Enjoy using StreamFlix API! 🎬🍿
+Enjoy using StreamFlix API!
