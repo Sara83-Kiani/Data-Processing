@@ -1,57 +1,232 @@
-# Year 2 period 2 
+# StreamFlix API - Year 2 Period 2
 
-## Project StreamFlix Data Processing 
+## Project Overview
+StreamFlix is a Netflix-like streaming service API built with NestJS, TypeORM, and MySQL. This project implements a complete backend system for managing user accounts, profiles, subscriptions, content (movies and series), watchlists, and viewing history.
 
-### Group members:
-* Beyza Ölmez Email: beyza.olmez@student.nhlstenden.com
-* Sara Kiani Nejad Email: sara.kiani.nejad@student.nhlstenden.com
-* Stefan Bryda Email: stefan.bryda@student.nhlstenden.com
-* Miriam Cerulíková Email: miriam.cerulikova@student.nhlstenden.com
+### Group Members
+* Beyza Ölmez - beyza.olmez@student.nhlstenden.com
+* Sara Kiani Nejad - sara.kiani.nejad@student.nhlstenden.com
+* Stefan Bryda - stefan.bryda@student.nhlstenden.com
+* Miriam Cerulíková - miriam.cerulikova@student.nhlstenden.com
 
-## Getting started
-These instrutions will aid you in setting up the environment for our web application.
+---
 
-## Local on your own machine
-This section is for the people that want to run our web-application in a docker-container
+## What We Built
+
+### Core Features Implemented
+- **Authentication System**: Secure user registration and login with JWT tokens, password hashing using bcrypt, and account activation tracking
+- **Content Management**: Browse movies and series with genre and age classification filtering
+- **Database Schema**: Comprehensive MySQL database with 15 tables including proper foreign keys, indexes, and relationships
+- **RESTful API**: Clean endpoint structure following REST principles with proper HTTP methods and status codes
+- **Object-Oriented Design**: All entities use proper OOP principles with private fields, getters/setters, and business logic methods
+
+### API Endpoints Available
+
+#### Authentication
+- `POST /auth/register` - Create a new account with email validation
+- `POST /auth/login` - Login and receive JWT access token
+
+#### Content Browsing
+- `GET /content/movies` - Get all movies (supports age filtering with `?minAge=13`)
+- `GET /content/movies/:id` - Get specific movie details
+- `GET /content/movies/search?q=query` - Search movies by title
+- `GET /content/series` - Get all series (supports age filtering)
+- `GET /content/series/:id` - Get series details with episodes
+- `GET /content/series/:id/episodes` - Get episodes (filter by season with `?season=1`)
+- `GET /content/genres` - List all available genres
+- `GET /content/classifications` - List all age classifications
+
+### Database Structure
+We designed a normalized database with the following main tables:
+- **Account** - User accounts with authentication details, referral codes, and trial tracking
+- **Profile** - Multiple profiles per account (max 4) with age restrictions
+- **Subscription** - Different subscription tiers (SD, HD, UHD) with pricing
+- **Movie/Series/Episode** - Content catalog with metadata
+- **Genre & Classification** - Content categorization and age ratings
+- **Watchlist & WatchHistory** - User viewing preferences and progress tracking
+- **Invitation** - Referral system for discounts
+- **ActivationToken & PasswordReset** - Account security features
+
+---
+
+## Getting Started
+
 ### Prerequisites
 
-#### Windows
+You'll need Docker installed on your machine:
 
-- [Docker desktop](https://docs.docker.com/desktop/windows/install/)
+**Windows**: [Docker Desktop](https://docs.docker.com/desktop/windows/install/)  
+**Mac**: [Docker Desktop for Mac](https://docs.docker.com/desktop/mac/install/) (check your architecture: x64/arm64)  
+**Linux**: [Docker Engine](https://docs.docker.com/engine/install/#server)
 
-#### Mac
+### Setup Instructions
 
-- [Docker Desktop for Mac](https://docs.docker.com/desktop/mac/install/)
-  - Note: Do check the architecture of your Mac! (x64/arm64)
+1. **Clone or download the project** to your local machine
 
-#### Linux and friends
+2. **Create the environment file**  
+   Rename `.env.TEMPLATE` to `.env` and configure your database settings:
+   ```env
+   # Database Configuration
+   DB_HOST=mysql
+   DB_PORT=3306
+   DB_USERNAME=root
+   DB_PASSWORD=rootpassword
+   DB_DATABASE=mydb
 
-- [Docker engine](https://docs.docker.com/engine/install/#server)
-  - Select your distribution from the table and follow the provided instructions.
+   # JWT Configuration
+   JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
+   JWT_EXPIRES_IN=1d
+   ```
 
-### Running
+3. **Prepare Docker Compose**  
+   Rename `docker-compose.yamlTEMPLATE` to `docker-compose.yaml`
 
-1. Download the archive containing the necessary files.
-2. Create an empty folder called "mysqldata"
-3. Change the filename of "docker-compose.yamlTEMPLATE" into "docker-compose.yaml".
-4. Change the filename of ".env.TEMPLATE" into ".env", change the database details to your own settings.
+4. **Create MySQL data folder**  
+   Create an empty folder called `mysqldata` in the project root (this stores your database)
 
-``` .env 
-#Specific project name
-COMPOSE_PROJECT_NAME="your_project"
+5. **Start the application**  
+   Open your terminal in the project folder and run:
+   ```bash
+   docker compose up --build
+   ```
+   The first build takes a few minutes. Wait until you see:
+   ```
+   🚀 StreamFlix API is running on: http://localhost:3000
+   ```
 
-# Environment Variables for database.
-DB_SERVER="your_database"
-DB_ROOT_USER="your_database_user"
-DB_ROOT_PASSWORD="your_database_password"
+6. **Access the services**
+   - **API**: http://localhost:3000
+   - **phpMyAdmin**: http://localhost:8080 (login with root/rootpassword)
+
+---
+
+## Testing the API
+
+### Using PowerShell (Windows)
+
+**Register a new account:**
+```powershell
+$body = @{
+    email = "test@streamflix.com"
+    password = "Test123456"
+} | ConvertTo-Json
+
+Invoke-RestMethod -Uri "http://localhost:3000/auth/register" -Method Post -Body $body -ContentType "application/json"
+```
+
+**Login:**
+```powershell
+$body = @{
+    email = "test@streamflix.com"
+    password = "Test123456"
+} | ConvertTo-Json
+
+Invoke-RestMethod -Uri "http://localhost:3000/auth/login" -Method Post -Body $body -ContentType "application/json"
+```
+
+**Browse content:**
+```powershell
+# Get all movies
+Invoke-RestMethod -Uri "http://localhost:3000/content/movies"
+
+# Get all genres
+Invoke-RestMethod -Uri "http://localhost:3000/content/genres"
+
+# Search movies
+Invoke-RestMethod -Uri "http://localhost:3000/content/movies/search?q=action"
+```
+
+### Using Your Browser
+
+For GET requests, just visit these URLs:
+- http://localhost:3000/content/movies
+- http://localhost:3000/content/series
+- http://localhost:3000/content/genres
+- http://localhost:3000/content/classifications
+
+### Using Postman (Recommended)
+
+Download [Postman](https://www.postman.com/downloads/) for a better testing experience with a graphical interface.
+
+---
+
+## Project Structure
 
 ```
-5. Open your prefered terminal/console in the project folder and execute "docker compose up --build" in your console.
-
-``` Powershell
-docker compose up --build
+Data-Processing/
+├── app/                          # NestJS application
+│   ├── src/
+│   │   ├── common/              # Shared utilities and base classes
+│   │   ├── config/              # Configuration files (database, etc.)
+│   │   ├── modules/
+│   │   │   ├── auth/           # Authentication (register, login)
+│   │   │   ├── accounts/       # Account management
+│   │   │   ├── profiles/       # Profile management
+│   │   │   ├── content/        # Movies, series, episodes
+│   │   │   └── invitations/    # Referral system
+│   │   ├── app.module.ts       # Main application module
+│   │   └── main.ts             # Application entry point
+│   ├── package.json            # Dependencies
+│   └── Dockerfile              # Docker configuration for API
+├── db-init/
+│   └── streamflix.sql          # Database schema
+├── docker-compose.yaml         # Docker services configuration
+├── .env                        # Environment variables
+└── README.md                   # This file
 ```
-6. Wait a few seconds till the docker-container is running. (First time you docker compose up --build it will take a moment.)
-7. Open ???, enter your database login data you set in step 4 to login.
-9. Go to ??? in your favorite browser.
-12. Enjoy!
+
+---
+
+## Technology Stack
+
+- **Framework**: NestJS (Node.js framework with TypeScript)
+- **ORM**: TypeORM (database abstraction layer)
+- **Database**: MySQL 8.0
+- **Authentication**: JWT (JSON Web Tokens) + bcrypt for password hashing
+- **Validation**: class-validator and class-transformer
+- **Containerization**: Docker & Docker Compose
+
+---
+
+## Development Notes
+
+### What's Working
+✅ User registration with email validation  
+✅ Secure login with JWT tokens  
+✅ Content browsing (movies, series, episodes)  
+✅ Age-based content filtering  
+✅ Search functionality  
+✅ Proper database relationships and constraints  
+✅ OOP design patterns in all entities  
+
+### What's Next
+- Profile management endpoints (create, update, delete profiles)
+- Watchlist functionality (add/remove content)
+- Watch history tracking with resume position
+- XML response format support
+- Database views and stored procedures
+- Role-based access control
+
+---
+
+## Troubleshooting
+
+**Database connection errors?**  
+Make sure MySQL container is fully started before the API tries to connect. Check Docker logs with `docker compose logs mysql`
+
+**Port already in use?**  
+If port 3000 or 3306 is taken, modify the ports in `docker-compose.yaml`
+
+**Can't import SQL file?**  
+Make sure you've selected the correct database (`mydb`) in phpMyAdmin before importing
+
+**API returns empty arrays?**  
+The database starts empty. You need to add sample data through phpMyAdmin or SQL inserts
+
+---
+
+## Contact
+
+For questions or issues, contact any of the group members listed above.
+
+Enjoy using StreamFlix API! 🎬🍿

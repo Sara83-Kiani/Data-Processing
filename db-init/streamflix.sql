@@ -19,6 +19,14 @@ CREATE TABLE IF NOT EXISTS `Subscription` (
     description VARCHAR(255) NOT NULL,
     price DOUBLE NOT NULL DEFAULT 7.99,
     quality ENUM('SD', 'HD', 'UHD') NOT NULL DEFAULT 'SD',
+    is_trial BOOLEAN DEFAULT FALSE,
+    trial_start_date DATETIME NULL,
+    trial_end_date DATETIME NULL,
+    discount_amount DECIMAL(5,2) DEFAULT 0.00,
+    discount_valid_until DATETIME NULL,
+    start_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+    end_date DATETIME NULL,
+    status ENUM('ACTIVE', 'CANCELLED', 'EXPIRED') DEFAULT 'ACTIVE',
     PRIMARY KEY(subscription_id)
 );
 
@@ -29,14 +37,23 @@ CREATE TABLE IF NOT EXISTS `Account` (
     password VARCHAR(60) NOT NULL,
     is_activated BOOLEAN NOT NULL DEFAULT FALSE,
     registration_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    subscription_id INT(11) NOT NULL,
-    payment_method VARCHAR(255) NOT NULL,
+    subscription_id INT(11),
+    payment_method VARCHAR(255),
     is_blocked BOOLEAN NOT NULL DEFAULT FALSE,
+    failed_login_attempts INT(11) DEFAULT 0,
+    locked_until DATETIME NULL,
+    referral_code VARCHAR(50) UNIQUE,
+    referred_by_account_id INT(11),
+    is_trial_used BOOLEAN DEFAULT FALSE,
     PRIMARY KEY (account_id),
     FOREIGN KEY (subscription_id) 
         REFERENCES Subscription(subscription_id)
         ON UPDATE CASCADE
-        ON DELETE CASCADE
+        ON DELETE SET NULL,
+    FOREIGN KEY (referred_by_account_id)
+        REFERENCES Account(account_id)
+        ON UPDATE CASCADE
+        ON DELETE SET NULL
 );
 
 -- Profile
@@ -59,7 +76,7 @@ CREATE TABLE IF NOT EXISTS `ProfilePreference` (
     profile_id INT(11) NOT NULL,
     classification_id INT(11) NOT NULL,
     genre_id INT(11) NOT NULL,
-    PRIMARY KEY(profile_id, classification_id, genre_id)
+    PRIMARY KEY(profile_id, classification_id, genre_id),
     FOREIGN KEY(profile_id) 
         REFERENCES Profile(profile_id) 
         ON UPDATE CASCADE 
@@ -77,17 +94,23 @@ CREATE TABLE IF NOT EXISTS `ProfilePreference` (
 -- Invitation
 CREATE TABLE IF NOT EXISTS `Invitation` (
     invitation_id INT(11) AUTO_INCREMENT NOT NULL,
-    account_id INT(11) NOT NULL,
-    invitee_email VARCHAR(50) UNIQUE NOT NULL,
+    inviter_account_id INT(11) NOT NULL,
+    invitee_email VARCHAR(50) NOT NULL,
+    invitee_account_id INT(11),
+    invitation_code VARCHAR(50) UNIQUE NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     accepted_at TIMESTAMP NULL DEFAULT NULL,
-    discount_valid_until TIMESTAMP NULL DEFAULT NULL,
-    status ENUM('PENDING', 'ACCEPTED') NOT NULL DEFAULT 'PENDING',
+    discount_applied BOOLEAN DEFAULT FALSE,
+    status ENUM('PENDING', 'ACCEPTED', 'EXPIRED') NOT NULL DEFAULT 'PENDING',
     PRIMARY KEY (invitation_id),
-    FOREIGN KEY (account_id) 
+    FOREIGN KEY (inviter_account_id) 
         REFERENCES Account(account_id)
         ON UPDATE CASCADE
-        ON DELETE CASCADE
+        ON DELETE CASCADE,
+    FOREIGN KEY (invitee_account_id)
+        REFERENCES Account(account_id)
+        ON UPDATE CASCADE
+        ON DELETE SET NULL
 );
 
 -- Movie
@@ -158,19 +181,31 @@ CREATE TABLE IF NOT EXISTS `Subtitle` (
     FOREIGN KEY(episode_id) 
         REFERENCES Episode(episode_id)
         ON UPDATE CASCADE 
-        ON DELETE CASCADE,
-    CHECK (
-    (movie_id IS NOT NULL AND episode_id IS NULL) 
-    OR 
-    (movie_id IS NULL AND episode_id IS NOT NULL)
-    )
+        ON DELETE CASCADE
+);
+
+-- ActivationToken
+CREATE TABLE IF NOT EXISTS `ActivationToken` (
+    token_id INT(11) AUTO_INCREMENT NOT NULL,
+    account_id INT(11) NOT NULL,
+    token VARCHAR(255) UNIQUE NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    expires_at TIMESTAMP NOT NULL,
+    PRIMARY KEY(token_id),
+    FOREIGN KEY(account_id)
+        REFERENCES Account(account_id)
+        ON UPDATE CASCADE
+        ON DELETE CASCADE
 );
 
 -- PasswordReset
 CREATE TABLE IF NOT EXISTS `PasswordReset` (
     pass_reset_id INT(11) AUTO_INCREMENT NOT NULL,
     account_id INT(11) NOT NULL,
-    pass_reset_token VARCHAR(255) NOT NULL,
+    pass_reset_token VARCHAR(255) UNIQUE NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    expires_at TIMESTAMP NOT NULL,
+    is_used BOOLEAN DEFAULT FALSE,
     PRIMARY KEY(pass_reset_id),
     FOREIGN KEY(account_id) 
         REFERENCES Account(account_id) 
@@ -186,6 +221,7 @@ CREATE TABLE IF NOT EXISTS `Watchlist` (
     movie_id INT(11),
     series_id INT(11),
     episode_id INT(11),
+    added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY(watchlist_id),
     FOREIGN KEY(profile_id) 
         REFERENCES Profile(profile_id) 
@@ -202,8 +238,7 @@ CREATE TABLE IF NOT EXISTS `Watchlist` (
     FOREIGN KEY(episode_id) 
         REFERENCES Episode(episode_id) 
         ON UPDATE CASCADE 
-        ON DELETE NO ACTION,
-    CHECK (movie_id IS NOT NULL OR (series_id IS NOT NULL AND episode_id IS NOT NULL))
+        ON DELETE NO ACTION
 );
 
 -- Watch History
@@ -213,6 +248,10 @@ CREATE TABLE IF NOT EXISTS `WatchHistory` (
     movie_id INT(11),
     episode_id INT(11),
     duration_watched INT(11) NOT NULL DEFAULT 1,
+    resume_position TIME DEFAULT '00:00:00',
+    completed BOOLEAN DEFAULT FALSE,
+    started_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    last_watched_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY(history_id),
     FOREIGN KEY(profile_id) 
         REFERENCES Profile(profile_id) 
@@ -225,6 +264,18 @@ CREATE TABLE IF NOT EXISTS `WatchHistory` (
     FOREIGN KEY(episode_id) 
         REFERENCES Episode(episode_id) 
         ON UPDATE CASCADE 
-        ON DELETE NO ACTION,
-    CHECK (movie_id IS NOT NULL OR (series_id IS NOT NULL AND episode_id IS NOT NULL))
+        ON DELETE NO ACTION
 );
+
+-- Indexes for better performance
+CREATE INDEX idx_account_email ON Account(email);
+CREATE INDEX idx_account_referral_code ON Account(referral_code);
+CREATE INDEX idx_profile_account ON Profile(account_id);
+CREATE INDEX idx_watchlist_profile ON Watchlist(profile_id);
+CREATE INDEX idx_watchhistory_profile ON WatchHistory(profile_id);
+CREATE INDEX idx_movie_genre ON Movie(genre_id);
+CREATE INDEX idx_series_genre ON Series(genre_id);
+CREATE INDEX idx_episode_series ON Episode(series_id);
+CREATE INDEX idx_invitation_code ON Invitation(invitation_code);
+CREATE INDEX idx_activation_token ON ActivationToken(token);
+CREATE INDEX idx_password_reset_token ON PasswordReset(pass_reset_token);
