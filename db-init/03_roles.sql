@@ -2,6 +2,7 @@
 CREATE ROLE IF NOT EXISTS junior_role;
 CREATE ROLE IF NOT EXISTS mid_role;
 CREATE ROLE IF NOT EXISTS senior_role;
+CREATE ROLE IF NOT EXISTS api_user_account;
 
 -- junior role:
 -- - Can read limited fields from Account
@@ -29,15 +30,22 @@ ON mydb.Profile TO mid_role;
 -- - Full access on the project database
 GRANT ALL PRIVILEGES ON mydb.* TO senior_role;
 
+-- dev role:
+-- - Full access on the project database
+GRANT senior_role TO api_user_account;
+
 CREATE USER IF NOT EXISTS 'junior1'@'%' IDENTIFIED BY 'juniorpwd';
 CREATE USER IF NOT EXISTS 'mid1'@'%'    IDENTIFIED BY 'midpwd';
 CREATE USER IF NOT EXISTS 'senior1'@'%' IDENTIFIED BY 'seniorpwd';
+CREATE USER IF NOT EXISTS 'apiuser1'@'%' IDENTIFIED BY 'apiuserpwd';
 
 GRANT junior_role TO 'junior1'@'%';
 GRANT mid_role    TO 'mid1'@'%';
 GRANT senior_role TO 'senior1'@'%';
+GRANT api_user_account TO 'apiuser1'@'%';
 
 -- Make the roles active by default when the users log in
 SET DEFAULT ROLE junior_role TO 'junior1'@'%';
 SET DEFAULT ROLE mid_role    TO 'mid1'@'%';
 SET DEFAULT ROLE senior_role TO 'senior1'@'%';
+SET DEFAULT ROLE api_user_account TO 'apiuser1'@'%';
