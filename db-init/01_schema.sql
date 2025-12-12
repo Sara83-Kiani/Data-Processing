@@ -247,7 +247,6 @@ CREATE TABLE IF NOT EXISTS `PasswordReset` (
 CREATE TABLE IF NOT EXISTS `Watchlist` (
     watchlist_id INT(11) AUTO_INCREMENT,
     profile_id INT(11) NOT NULL,
-    name VARCHAR(255) NOT NULL,
     movie_id INT(11),
     series_id INT(11),
     episode_id INT(11),
