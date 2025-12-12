@@ -121,14 +121,14 @@ INSERT INTO Episode (series_id, title, duration, season_number, episode_number) 
 -- Must satisfy trigger:
 --  - EITHER movie_id NOT NULL and series_id/episode_id NULL
 --  - OR movie_id NULL AND series_id NOT NULL AND episode_id NOT NULL
-INSERT INTO Watchlist (profile_id, name, movie_id, series_id, episode_id) VALUES
-(1, 'Action Movies', 1, NULL, NULL),
-(1, 'Sci-Fi Collection', 2, NULL, NULL),
+INSERT INTO Watchlist (profile_id, movie_id, series_id, episode_id) VALUES
+(1, 1, NULL, NULL),
+(1, 2, NULL, NULL),
 -- Series watchlist: Breaking Bad S1E1 (series_id=1, episode_id=1)
-(1, 'Must Watch Series', NULL, 1, 1),
-(3, 'Crime Dramas', 4, NULL, NULL),
+(1, NULL, 1, 1),
+(3, 4, NULL, NULL),
 -- Series watchlist: Stranger Things S1E1 (series_id=2, episode_id=6)
-(3, 'TV Shows', NULL, 2, 6);
+(3, NULL, 2, 6);
 
 -- Watch History
 -- Must satisfy trigger: movie_id IS NOT NULL OR episode_id IS NOT NULL
