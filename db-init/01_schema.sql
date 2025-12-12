@@ -77,7 +77,7 @@ CREATE TABLE IF NOT EXISTS `ProfilePreference` (
     classification_id INT(11) NOT NULL,
     genre_id INT(11) NOT NULL,
     PRIMARY KEY(profile_id, classification_id, genre_id),
-    FOREIGN KEY(profile_id) 
+    FOREIGN KEY(profile_id)
         REFERENCES Profile(profile_id) 
         ON UPDATE CASCADE 
         ON DELETE CASCADE,
@@ -184,6 +184,36 @@ CREATE TABLE IF NOT EXISTS `Subtitle` (
         ON DELETE CASCADE
 );
 
+-- triggers for sustitle. making sure a subtitle belongs either to a movie or an episode.
+-- if episode and movie are both null: error
+-- if episode and movie are BOTH NOT null: error
+-- only one of them is null: allowed
+DELIMITER //
+
+CREATE TRIGGER subtitle_xor_before_insert
+BEFORE INSERT ON Subtitle
+FOR EACH ROW
+BEGIN
+    IF ( (NEW.movie_id IS NULL AND NEW.episode_id IS NULL)
+         OR (NEW.movie_id IS NOT NULL AND NEW.episode_id IS NOT NULL) ) THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Exactly one of movie_id or episode_id must be non-NULL';
+    END IF;
+END //
+    
+CREATE TRIGGER subtitle_xor_before_update
+BEFORE UPDATE ON Subtitle
+FOR EACH ROW
+BEGIN
+    IF ( (NEW.movie_id IS NULL AND NEW.episode_id IS NULL)
+         OR (NEW.movie_id IS NOT NULL AND NEW.episode_id IS NOT NULL) ) THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Exactly one of movie_id or episode_id must be non-NULL';
+    END IF;
+END //
+
+DELIMITER ;
+
 -- ActivationToken
 CREATE TABLE IF NOT EXISTS `ActivationToken` (
     token_id INT(11) AUTO_INCREMENT NOT NULL,
@@ -223,7 +253,7 @@ CREATE TABLE IF NOT EXISTS `Watchlist` (
     episode_id INT(11),
     added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY(watchlist_id),
-    FOREIGN KEY(profile_id) 
+    FOREIGN KEY(profile_id)
         REFERENCES Profile(profile_id) 
         ON UPDATE CASCADE 
         ON DELETE NO ACTION,
@@ -241,6 +271,35 @@ CREATE TABLE IF NOT EXISTS `Watchlist` (
         ON DELETE NO ACTION
 );
 
+-- a watchlist item must point either to:
+-- a movie (movie_id NOT NULL), OR
+-- a specific episode (series_id NOT NULL AND episode_id NOT NULL).
+-- If movie_id is NULL, then BOTH series_id and episode_id must be non-NULL.
+DELIMITER //
+
+CREATE TRIGGER watchlist_check_before_insert
+BEFORE INSERT ON Watchlist
+FOR EACH ROW
+BEGIN
+    IF (NEW.movie_id IS NULL AND (NEW.series_id IS NULL OR NEW.episode_id IS NULL)) THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Watchlist item must reference a movie or a (series, episode) pair';
+    END IF;
+END //
+
+CREATE TRIGGER watchlist_check_before_update
+BEFORE UPDATE ON Watchlist
+FOR EACH ROW
+BEGIN
+    IF (NEW.movie_id IS NULL AND (NEW.series_id IS NULL OR NEW.episode_id IS NULL)) THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Watchlist item must reference a movie or a (series, episode) pair';
+    END IF;
+END //
+
+DELIMITER ;
+
+
 -- Watch History
 CREATE TABLE IF NOT EXISTS `WatchHistory` (
     history_id INT(11) AUTO_INCREMENT,
@@ -253,19 +312,45 @@ CREATE TABLE IF NOT EXISTS `WatchHistory` (
     started_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     last_watched_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY(history_id),
-    FOREIGN KEY(profile_id) 
-        REFERENCES Profile(profile_id) 
-        ON UPDATE CASCADE 
+    FOREIGN KEY(profile_id)
+        REFERENCES Profile(profile_id)
+        ON UPDATE CASCADE
         ON DELETE NO ACTION,
     FOREIGN KEY(movie_id) 
-        REFERENCES Movie(movie_id) 
-        ON UPDATE CASCADE 
+        REFERENCES Movie(movie_id)
+        ON UPDATE CASCADE
         ON DELETE NO ACTION,
-    FOREIGN KEY(episode_id) 
-        REFERENCES Episode(episode_id) 
+    FOREIGN KEY(episode_id)
+        REFERENCES Episode(episode_id)
         ON UPDATE CASCADE 
         ON DELETE NO ACTION
 );
+
+-- each history row must reference at least one title:
+-- movie_id NOT NULL OR episode_id NOT NULL.
+DELIMITER //
+
+CREATE TRIGGER watchhistory_check_before_insert
+BEFORE INSERT ON WatchHistory
+FOR EACH ROW
+BEGIN
+    IF (NEW.movie_id IS NULL AND NEW.episode_id IS NULL) THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Watch history item must reference a movie or an episode';
+    END IF;
+END //
+
+CREATE TRIGGER watchhistory_check_before_update
+BEFORE UPDATE ON WatchHistory
+FOR EACH ROW
+BEGIN
+    IF (NEW.movie_id IS NULL AND NEW.episode_id IS NULL) THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Watch history item must reference a movie or an episode';
+    END IF;
+END //
+
+DELIMITER ;
 
 -- Indexes for better performance
 CREATE INDEX idx_account_email ON Account(email);

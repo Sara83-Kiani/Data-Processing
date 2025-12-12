@@ -95,37 +95,43 @@ INSERT INTO Series (title, seasons, description, genre_id, classification_id) VA
 ('Game of Thrones', 8, 'Noble families vie for control of the Iron Throne', 2, 5),
 ('Friends', 10, 'Six friends navigate life and love in New York', 3, 6);
 
--- Episodes for Breaking Bad
+-- Episodes for Breaking Bad (series_id = 1)
 INSERT INTO Episode (series_id, title, duration, season_number, episode_number) VALUES
-(1, 'Pilot', '00:58:00', 1, 1),
-(1, 'Cats in the Bag', '00:48:00', 1, 2),
-(1, 'And the Bags in the River', '00:48:00', 1, 3),
-(1, 'Seven Thirty-Seven', '00:47:00', 2, 1),
-(1, 'Grilled', '00:47:00', 2, 2);
+(1, 'Pilot', '00:58:00', 1, 1),               -- episode_id = 1
+(1, 'Cats in the Bag', '00:48:00', 1, 2),      -- episode_id = 2
+(1, 'And the Bags in the River', '00:48:00', 1, 3), -- episode_id = 3
+(1, 'Seven Thirty-Seven', '00:47:00', 2, 1),   -- episode_id = 4
+(1, 'Grilled', '00:47:00', 2, 2);              -- episode_id = 5
 
--- Episodes for Stranger Things
+-- Episodes for Stranger Things (series_id = 2)
 INSERT INTO Episode (series_id, title, duration, season_number, episode_number) VALUES
-(2, 'Chapter One: The Vanishing', '00:49:00', 1, 1),
-(2, 'Chapter Two: The Weirdo', '00:56:00', 1, 2),
-(2, 'Chapter Three: Holly Jolly', '00:52:00', 1, 3),
-(2, 'MADMAX', '00:56:00', 2, 1),
-(2, 'Trick or Treat', '00:54:00', 2, 2);
+(2, 'Chapter One: The Vanishing', '00:49:00', 1, 1), -- episode_id = 6
+(2, 'Chapter Two: The Weirdo', '00:56:00', 1, 2),    -- episode_id = 7
+(2, 'Chapter Three: Holly Jolly', '00:52:00', 1, 3), -- episode_id = 8
+(2, 'MADMAX', '00:56:00', 2, 1),                     -- episode_id = 9
+(2, 'Trick or Treat', '00:54:00', 2, 2);             -- episode_id = 10
 
--- Episodes for The Office
+-- Episodes for The Office (series_id = 3)
 INSERT INTO Episode (series_id, title, duration, season_number, episode_number) VALUES
 (3, 'Pilot', '00:23:00', 1, 1),
 (3, 'Diversity Day', '00:22:00', 1, 2),
 (3, 'Health Care', '00:22:00', 1, 3);
 
 -- Watchlist
-INSERT INTO Watchlist (profile_id, name, movie_id, series_id) VALUES
-(1, 'Action Movies', 1, NULL),
-(1, 'Sci-Fi Collection', 2, NULL),
-(1, 'Must Watch Series', NULL, 1),
-(3, 'Crime Dramas', 4, NULL),
-(3, 'TV Shows', NULL, 2);
+-- Must satisfy trigger:
+--  - EITHER movie_id NOT NULL and series_id/episode_id NULL
+--  - OR movie_id NULL AND series_id NOT NULL AND episode_id NOT NULL
+INSERT INTO Watchlist (profile_id, name, movie_id, series_id, episode_id) VALUES
+(1, 'Action Movies', 1, NULL, NULL),
+(1, 'Sci-Fi Collection', 2, NULL, NULL),
+-- Series watchlist: Breaking Bad S1E1 (series_id=1, episode_id=1)
+(1, 'Must Watch Series', NULL, 1, 1),
+(3, 'Crime Dramas', 4, NULL, NULL),
+-- Series watchlist: Stranger Things S1E1 (series_id=2, episode_id=6)
+(3, 'TV Shows', NULL, 2, 6);
 
 -- Watch History
+-- Must satisfy trigger: movie_id IS NOT NULL OR episode_id IS NOT NULL
 INSERT INTO WatchHistory (profile_id, movie_id, episode_id, duration_watched, resume_position, completed) VALUES
 (1, 1, NULL, 136, '02:16:00', TRUE),
 (1, 2, NULL, 85, '01:25:00', FALSE),
@@ -134,6 +140,7 @@ INSERT INTO WatchHistory (profile_id, movie_id, episode_id, duration_watched, re
 (5, 3, NULL, 142, '02:22:00', TRUE);
 
 -- Subtitles
+-- Must satisfy trigger: exactly one of (movie_id, episode_id) is non-NULL
 INSERT INTO Subtitle (movie_id, episode_id, language, subtitle_location) VALUES
 (1, NULL, 'ENGLISH', '/subtitles/matrix_en.srt'),
 (1, NULL, 'DUTCH', '/subtitles/matrix_nl.srt'),
@@ -150,8 +157,9 @@ INSERT INTO ProfilePreference (profile_id, classification_id, genre_id) VALUES
 (5, 4, 2);
 
 -- Invitations
-INSERT INTO Invitation (inviter_account_id, invitee_account_id, invitation_code, discount_applied) VALUES
-(1, 2, 'INV-JOHN-001', TRUE),
-(2, 3, 'INV-JANE-002', FALSE);
+-- New schema requires invitee_email NOT NULL; status defaults to 'PENDING' but we can mark accepted ones.
+INSERT INTO Invitation (inviter_account_id, invitee_email, invitee_account_id, invitation_code, discount_applied, status) VALUES
+(1, 'jane.smith@streamflix.com', 2, 'INV-JOHN-001', TRUE, 'ACCEPTED'),
+(2, 'bob.wilson@streamflix.com', 3, 'INV-JANE-002', FALSE, 'ACCEPTED');
 
 SELECT 'Sample data inserted successfully!' AS Status;
