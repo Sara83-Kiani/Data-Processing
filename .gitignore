@@ -1,2 +1,6 @@
 .env
 mysqldata/*
+# dependencies
+node_modules/
+app/node_modules/
+
