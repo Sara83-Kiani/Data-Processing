@@ -12,8 +12,7 @@ import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { randomUUID } from 'crypto';
 
-// ❌ Mail disabled for now
-// import * as nodemailer from 'nodemailer';
+import * as nodemailer from 'nodemailer';
 
 import { Account } from '../accounts/accounts.entity';
 import { ActivationToken } from './activation-token.entity';
@@ -56,77 +55,72 @@ export class AuthService {
     return Number.isFinite(n) && n > 0 ? n : 24;
   }
 
-  /**
-   * MAIL DISABLED (for now)
-   *
-   * In the real use case, this should send an email containing the activation link.
-   * For development/testing, we only print the activation link in the server console.
-   *
-   * Later, when you want email:
-   *  - uncomment nodemailer import above
-   *  - install nodemailer (npm i nodemailer)
-   *  - read SMTP_* variables from .env
-   *  - send the email below (sample code is included and commented out)
-   */
-  private async sendActivationEmail(email: string, token: string): Promise<void> {
-    const activationLink =
-      `${this.apiBaseUrl()}/auth/activate?token=${encodeURIComponent(token)}`;
+private async sendActivationEmail(email: string, token: string): Promise<void> {
+  const activationLink =
+    `${this.apiBaseUrl()}/auth/activate?token=${encodeURIComponent(token)}`;
 
-    // ✅ Dev: log activation link
+  const host = process.env.SMTP_HOST;
+  const user = process.env.SMTP_USER;
+  const pass = process.env.SMTP_PASS;
+  const port = Number(process.env.SMTP_PORT ?? 587);
+  const from = process.env.SMTP_FROM ?? user ?? 'no-reply@streamflix.local';
+
+  if (!host || !user || !pass) {
     // eslint-disable-next-line no-console
     console.log(`[DEV] Activation link for ${email}: ${activationLink}`);
-
-    // -----------------------------------------------------------------------
-    // 💤 Email sending intentionally disabled for now.
-    //
-    // const host = process.env.SMTP_HOST;
-    // const user = process.env.SMTP_USER;
-    // const pass = process.env.SMTP_PASS;
-    // const port = Number(process.env.SMTP_PORT ?? 587);
-    // const from = process.env.SMTP_FROM ?? 'no-reply@streamflix.local';
-    //
-    // if (!host || !user || !pass) {
-    //   console.log(`[DEV] No SMTP configured. Activation link: ${activationLink}`);
-    //   return;
-    // }
-    //
-    // const transporter = nodemailer.createTransport({
-    //   host,
-    //   port,
-    //   secure: port === 465,
-    //   auth: { user, pass },
-    // });
-    //
-    // await transporter.sendMail({
-    //   from,
-    //   to: email,
-    //   subject: 'Verify your account',
-    //   text: `Click this link to activate your account:\n\n${activationLink}\n\nThis link expires in ${this.activationTtlHours()} hours.`,
-    //   html: `
-    //     <p>Click this link to activate your account:</p>
-    //     <p><a href="${activationLink}">Activate account</a></p>
-    //     <p>This link expires in ${this.activationTtlHours()} hours.</p>
-    //   `,
-    // });
-    // -----------------------------------------------------------------------
+    return;
   }
 
-  // =========================
-  // 1) REGISTER
-  // =========================
+  const transporter = nodemailer.createTransport({
+    host,
+    port,
+    secure: port === 465, // 465 = SSL, 587 = STARTTLS
+    auth: { user, pass },
+    requireTLS: port === 587,
+  });
+
+  try {
+    await transporter.sendMail({
+      from,
+      to: email,
+      subject: 'Verify your account',
+      text:
+        `Welcome!\n\n` +
+        `Click this link to activate your account:\n${activationLink}\n\n` +
+        `This link expires in ${this.activationTtlHours()} hours.`,
+      html: `
+        <p>Welcome!</p>
+        <p>Click this link to activate your account:</p>
+        <p><a href="${activationLink}">Activate account</a></p>
+        <p>This link expires in ${this.activationTtlHours()} hours.</p>
+      `,
+    });
+
+  } catch (err) {
+    //log the activation link for manual activation incase mail fails.
+    // eslint-disable-next-line no-console
+    console.error('[MAIL] Failed to send activation email:', err);
+    // eslint-disable-next-line no-console
+    console.log(`[DEV] Activation link for ${email}: ${activationLink}`);
+  }
+}
+
+
+  // REGISTER
+
   async register(dto: RegisterDto): Promise<{ message: string }> {
     const email = dto.email.trim().toLowerCase();
 
-    // 1) Check if email already exists
+    // Check if email already exists
     const exists = await this.accountRepo.findOne({ where: { email } });
     if (exists) {
       throw new BadRequestException('Email is already registered.');
     }
 
-    // 2) Hash password (bcrypt -> 60 chars, matches VARCHAR(60))
+    // Hash password (bcrypt -> 60 chars, matches VARCHAR(60))
     const passwordHash = await bcrypt.hash(dto.password, 10);
 
-    // 3) Create account (not activated yet)
+    // Create account (not activated yet)
     const account = await this.accountRepo.save(
       this.accountRepo.create({
         email,
@@ -138,7 +132,7 @@ export class AuthService {
       }),
     );
 
-    // 4) Create activation token row
+    // Create activation token row
     const token = randomUUID();
     const expiresAt = new Date(Date.now() + this.activationTtlHours() * 60 * 60 * 1000);
 
@@ -150,7 +144,7 @@ export class AuthService {
       }),
     );
 
-    // 5) "Send" email (currently logs activation link to console)
+    // "Send" email (currently logs activation link to console)
     await this.sendActivationEmail(email, token);
 
     return {
@@ -159,9 +153,8 @@ export class AuthService {
     };
   }
 
-  // =========================
-  // 2) ACTIVATE ACCOUNT (via link)
-  // =========================
+
+  // ACTIVATE ACCOUNT
   async activateAccount(token: string): Promise<void> {
     if (!token) throw new BadRequestException('Missing activation token.');
 
@@ -184,9 +177,7 @@ export class AuthService {
     await this.activationRepo.delete({ token });
   }
 
-  // =========================
-  // 3) LOGIN + TEMP LOCK AFTER 3 FAILS
-  // =========================
+  // LOGIN + TEMP LOCK AFTER 3 FAILS
   async login(dto: LoginDto): Promise<{ accessToken: string }> {
     const email = dto.email.trim().toLowerCase();
 
@@ -205,7 +196,7 @@ export class AuthService {
 
     // Temporary lock check
     if (account.lockedUntil && account.lockedUntil.getTime() > Date.now()) {
-      // 423 Locked = good semantic status for "try later"
+      // 423 Locked = try later
       throw new HttpException('Too many failed attempts. Try again later.', 423);
     }
 
@@ -242,11 +233,7 @@ export class AuthService {
     return { accessToken };
   }
 
-  /**
-   * After activation, we redirect user to frontend login.
-   * Frontend reads ?activated=1 and shows popup:
-   * "registration is complete, you can log in"
-   */
+  // redirect user to frontend login.
   getActivatedRedirectUrl(): string {
     return `${this.frontendUrl()}/login?activated=1`;
   }
