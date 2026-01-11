@@ -32,6 +32,22 @@ services:
     volumes:
       - ./nginx.conf:/etc/nginx/conf.d/app.conf
 
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    container_name: ${COMPOSE_PROJECT_NAME}_client
+    ports:
+      - "5173:5173"
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+      - VITE_API_BASE_URL=http://localhost:3000
+    volumes:
+      - ./client:/usr/src/app
+      - /usr/src/app/node_modules
+    depends_on:
+      - api
+
   mysql:
     image: mysql:8.0
     container_name: ${COMPOSE_PROJECT_NAME}_mysql
