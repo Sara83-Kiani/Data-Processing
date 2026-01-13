@@ -1,5 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, CreateDateColumn } from 'typeorm';
-import { Account } from '../../accounts/entities/account.entity';
+import { Account } from '../../accounts/accounts.entity';
 
 /**
  * PasswordReset Entity

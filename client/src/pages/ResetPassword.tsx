@@ -10,13 +10,11 @@ export default function ResetPassword() {
   const [errorMsg, setErrorMsg] = useState('');
 
   useEffect(() => {
-    // Get token from URL query params
+    // Check if token is provided in URL (optional, for backward compatibility)
     const params = new URLSearchParams(window.location.search);
     const tokenParam = params.get('token');
     if (tokenParam) {
       setToken(tokenParam);
-    } else {
-      setErrorMsg('Invalid reset link. Please request a new password reset.');
     }
   }, []);
 
@@ -59,14 +57,24 @@ export default function ResetPassword() {
       <div className="auth-card">
         <h1 className="auth-title">Reset Password</h1>
         <p className="auth-subtitle">
-          Enter your new password below.
+          Enter the reset token from your email and choose a new password.
         </p>
 
-        {!token ? (
-          <div className="auth-error">{errorMsg}</div>
-        ) : (
-          <>
+        <>
             <form className="auth-form" onSubmit={onSubmit}>
+              <label className="auth-label">
+                Reset Token
+                <input
+                  className="auth-input"
+                  type="text"
+                  value={token}
+                  onChange={(e) => setToken(e.target.value)}
+                  placeholder="Paste your reset token here"
+                  required
+                  autoComplete="off"
+                />
+              </label>
+
               <label className="auth-label">
                 New Password
                 <input
@@ -110,7 +118,6 @@ export default function ResetPassword() {
             )}
             {errorMsg && <div className="auth-error">{errorMsg}</div>}
           </>
-        )}
 
         <div className="auth-footer">
           <a className="auth-link" href="/login">

@@ -22,9 +22,10 @@ export class AccountsController {
     try {
       const accountId = req.user?.sub || req.user?.accountId;
       const account = await this.accountsService.getAccountById(accountId);
+      const { password, ...accountData } = account as any;
       return {
         success: true,
-        data: account.toJSON(),
+        data: accountData,
       };
     } catch (error) {
       return {

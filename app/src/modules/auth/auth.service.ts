@@ -12,12 +12,15 @@ import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { randomUUID } from 'crypto';
 
-import * as nodemailer from 'nodemailer';
+import { MailService } from '../mail/mail.service';
 
 import { Account } from '../accounts/accounts.entity';
 import { ActivationToken } from './activation-token.entity';
+import { PasswordReset } from './entities/password-reset.entity';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 
 @Injectable()
 export class AuthService {
@@ -28,7 +31,12 @@ export class AuthService {
     @InjectRepository(ActivationToken)
     private readonly activationRepo: Repository<ActivationToken>,
 
+    @InjectRepository(PasswordReset)
+    private readonly passwordResetRepo: Repository<PasswordReset>,
+
     private readonly jwtService: JwtService,
+
+    private readonly mailService: MailService,
   ) {}
 
   // ===== Helpers for config values (with safe defaults) =====
@@ -55,55 +63,11 @@ export class AuthService {
     return Number.isFinite(n) && n > 0 ? n : 24;
   }
 
-private async sendActivationEmail(email: string, token: string): Promise<void> {
-  const activationLink =
-    `${this.apiBaseUrl()}/auth/activate?token=${encodeURIComponent(token)}`;
-
-  const host = process.env.SMTP_HOST;
-  const user = process.env.SMTP_USER;
-  const pass = process.env.SMTP_PASS;
-  const port = Number(process.env.SMTP_PORT ?? 587);
-  const from = process.env.SMTP_FROM ?? user ?? 'no-reply@streamflix.local';
-
-  if (!host || !user || !pass) {
-    // eslint-disable-next-line no-console
-    console.log(`[DEV] Activation link for ${email}: ${activationLink}`);
-    return;
+  private async sendActivationEmail(email: string, token: string): Promise<void> {
+    const activationLink =
+      `${this.apiBaseUrl()}/auth/activate?token=${encodeURIComponent(token)}`;
+    await this.mailService.sendActivationEmail(email, activationLink, this.activationTtlHours());
   }
-
-  const transporter = nodemailer.createTransport({
-    host,
-    port,
-    secure: port === 465, // 465 = SSL, 587 = STARTTLS
-    auth: { user, pass },
-    requireTLS: port === 587,
-  });
-
-  try {
-    await transporter.sendMail({
-      from,
-      to: email,
-      subject: 'Verify your account',
-      text:
-        `Welcome!\n\n` +
-        `Click this link to activate your account:\n${activationLink}\n\n` +
-        `This link expires in ${this.activationTtlHours()} hours.`,
-      html: `
-        <p>Welcome!</p>
-        <p>Click this link to activate your account:</p>
-        <p><a href="${activationLink}">Activate account</a></p>
-        <p>This link expires in ${this.activationTtlHours()} hours.</p>
-      `,
-    });
-
-  } catch (err) {
-    //log the activation link for manual activation incase mail fails.
-    // eslint-disable-next-line no-console
-    console.error('[MAIL] Failed to send activation email:', err);
-    // eslint-disable-next-line no-console
-    console.log(`[DEV] Activation link for ${email}: ${activationLink}`);
-  }
-}
 
 
   // REGISTER
@@ -236,5 +200,73 @@ private async sendActivationEmail(email: string, token: string): Promise<void> {
   // redirect user to frontend login.
   getActivatedRedirectUrl(): string {
     return `${this.frontendUrl()}/login?activated=1`;
+  }
+
+  // FORGOT PASSWORD
+  async forgotPassword(dto: ForgotPasswordDto): Promise<{ message: string }> {
+    const email = dto.email.trim().toLowerCase();
+    const account = await this.accountRepo.findOne({ where: { email } });
+
+    // Always return success to prevent email enumeration
+    if (!account) {
+      return { message: 'If an account with that email exists, a password reset token has been sent.' };
+    }
+
+    // Generate reset token
+    const token = randomUUID();
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+    // Invalidate existing tokens for this account
+    await this.passwordResetRepo.update(
+      { accountId: account.id, isUsed: false },
+      { isUsed: true },
+    );
+
+    // Create new password reset token
+    await this.passwordResetRepo.save(
+      this.passwordResetRepo.create({
+        accountId: account.id,
+        token,
+        expiresAt,
+        isUsed: false,
+      }),
+    );
+
+    // Send reset email with token (not a link)
+    await this.mailService.sendPasswordResetToken(email, token);
+
+    return { message: 'If an account with that email exists, a password reset token has been sent.' };
+  }
+
+  // RESET PASSWORD
+  async resetPassword(dto: ResetPasswordDto): Promise<{ message: string }> {
+    const resetRow = await this.passwordResetRepo.findOne({
+      where: { token: dto.token },
+      relations: ['account'],
+    });
+
+    if (!resetRow) {
+      throw new BadRequestException('Invalid or expired reset token.');
+    }
+
+    if (!resetRow.isValid()) {
+      throw new BadRequestException('Invalid or expired reset token.');
+    }
+
+    // Hash new password
+    const passwordHash = await bcrypt.hash(dto.newPassword, 10);
+
+    // Update account password
+    resetRow.account.password = passwordHash;
+    resetRow.account.failedLoginAttempts = 0;
+    resetRow.account.lockedUntil = null;
+    resetRow.account.isBlocked = false;
+    await this.accountRepo.save(resetRow.account);
+
+    // Mark token as used
+    resetRow.isUsed = true;
+    await this.passwordResetRepo.save(resetRow);
+
+    return { message: 'Password has been reset successfully. You can now log in with your new password.' };
   }
 }

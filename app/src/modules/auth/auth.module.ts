@@ -8,6 +8,7 @@ import { AuthService } from './auth.service';
 
 import { Account } from '../accounts/accounts.entity';
 import { ActivationToken } from './activation-token.entity';
+import { PasswordReset } from './entities/password-reset.entity';
 
 function getJwtExpiresIn(): SignOptions['expiresIn'] {
   const raw = process.env.JWT_EXPIRES_IN ?? '3600'; // default: 1 hour in seconds
@@ -21,7 +22,7 @@ function getJwtExpiresIn(): SignOptions['expiresIn'] {
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Account, ActivationToken]),
+    TypeOrmModule.forFeature([Account, ActivationToken, PasswordReset]),
 
     JwtModule.register({
       secret: process.env.JWT_SECRET ?? 'dev_secret_change_me',
@@ -32,6 +33,6 @@ function getJwtExpiresIn(): SignOptions['expiresIn'] {
   ],
   controllers: [AuthController],
   providers: [AuthService],
-  exports: [AuthService],
+  exports: [AuthService, JwtModule],
 })
 export class AuthModule {}

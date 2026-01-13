@@ -7,6 +7,7 @@ import { AccountsModule } from './modules/accounts/accounts.module';
 import { ProfilesModule } from './modules/profiles/profiles.module';
 import { ContentModule } from './modules/content/content.module';
 import { InvitationsModule } from './modules/invitations/invitations.module';
+import { MailModule } from './modules/mail/mail.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { InvitationsModule } from './modules/invitations/invitations.module';
       autoLoadEntities: true,
       synchronize: false,
     }),
+    MailModule,
     AuthModule,
     AccountsModule,
     ProfilesModule,
