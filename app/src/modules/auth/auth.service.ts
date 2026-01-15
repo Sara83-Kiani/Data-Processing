@@ -133,8 +133,7 @@ async register(dto: RegisterDto): Promise<{ message: string }> {
   await this.sendActivationEmail(email, token);
 
   return {
-    message:
-      'Registration successful. Please verify your account (dev: check API console for activation link).',
+    message: 'Registration successful. Please verify your account.',
   };
 }
 
