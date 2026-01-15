@@ -66,6 +66,18 @@
   border-color: #8aa1ff;
 }
 
+.auth-links-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: -6px;
+  font-size: 13px;
+}
+
+.auth-link-small {
+  font-size: 13px;
+}
+
 .auth-button {
   height: 40px;
   border: none;
