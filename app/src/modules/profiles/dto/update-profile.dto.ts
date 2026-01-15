@@ -7,11 +7,6 @@ export class UpdateProfileDto {
   name?: string;
 
   @IsOptional()
-  @IsString()
-  @MaxLength(255)
-  image?: string;
-
-  @IsOptional()
   @IsInt()
   @Min(0)
   age?: number;

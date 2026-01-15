@@ -4,7 +4,6 @@ export type Profile = {
   profileId: number;
   accountId: number;
   name: string;
-  image: string;
   age: number;
   language: 'ENGLISH' | 'DUTCH';
 };
@@ -17,7 +16,6 @@ export function createProfile(payload: {
   name: string;
   age?: number;
   language?: 'ENGLISH' | 'DUTCH';
-  image?: string;
 }) {
   return authedFetch<Profile>('/profiles', {
     method: 'POST',
@@ -31,7 +29,6 @@ export function updateProfile(
     name: string;
     age: number;
     language: 'ENGLISH' | 'DUTCH';
-    image: string;
   }>,
 ) {
   return authedFetch<Profile>(`/profiles/${profileId}`, {

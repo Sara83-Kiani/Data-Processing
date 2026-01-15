@@ -9,6 +9,12 @@ export default function Profiles() {
   const [name, setName] = useState('');
   const [age, setAge] = useState<number>(18);
 
+  function avatarUrlForProfile(profileId: number) {
+    const avatarCount = 4;
+    const idx = ((profileId % avatarCount) + avatarCount) % avatarCount;
+    return `/avatars/avatar-${idx + 1}.svg`;
+  }
+
   async function refresh() {
     setErr('');
     setLoading(true);
@@ -84,9 +90,16 @@ export default function Profiles() {
                   cursor: 'pointer',
                 }}
               >
-                <div onClick={() => selectProfile(p)}>
-                  <div style={{ fontWeight: 700 }}>{p.name}</div>
-                  <div style={{ fontSize: 12, opacity: 0.8 }}>Age: {p.age}</div>
+                <div onClick={() => selectProfile(p)} style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                  <img
+                    src={avatarUrlForProfile(p.profileId)}
+                    alt=""
+                    style={{ width: 56, height: 56, borderRadius: 12, objectFit: 'cover', flex: '0 0 auto' }}
+                  />
+                  <div>
+                    <div style={{ fontWeight: 700 }}>{p.name}</div>
+                    <div style={{ fontSize: 12, opacity: 0.8 }}>Age: {p.age}</div>
+                  </div>
                 </div>
 
                 <button
