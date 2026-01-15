@@ -3,12 +3,14 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { randomUUID } from 'crypto';
 import { Invitation } from './entities/invitation.entity';
+import { MailService } from '../mail/mail.service';
 
 @Injectable()
 export class InvitationsService {
   constructor(
     @InjectRepository(Invitation)
     private readonly invitationRepo: Repository<Invitation>,
+    private readonly mailService: MailService,
   ) {}
 
   async create(inviterAccountId: number, inviteeEmail: string) {
@@ -26,10 +28,12 @@ export class InvitationsService {
 
     const saved = await this.invitationRepo.save(row);
 
-    // Frontend will use this to prefill register?code=...
+    const registerUrl = `${process.env.FRONTEND_URL ?? 'http://localhost:5173'}/register?code=${encodeURIComponent(saved.invitationCode)}`;
+    const emailSent = await this.mailService.sendInvitationEmail(saved.inviteeEmail, registerUrl);
+
     return {
       invitationCode: saved.invitationCode,
-      registerUrl: `${process.env.FRONTEND_URL ?? 'http://localhost:5173'}/register?code=${encodeURIComponent(saved.invitationCode)}`,
+      emailSent,
     };
   }
 

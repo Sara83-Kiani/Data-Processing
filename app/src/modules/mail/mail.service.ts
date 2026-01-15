@@ -110,4 +110,38 @@ export class MailService {
       return false;
     }
   }
+
+  async sendInvitationEmail(email: string, registerUrl: string): Promise<boolean> {
+    const transporter = this.getTransporter();
+
+    if (!transporter) {
+      this.logger.warn(`[DEV] No SMTP configured. Invitation link for ${email}: ${registerUrl}`);
+      return true;
+    }
+
+    try {
+      await transporter.sendMail({
+        from: this.getFromAddress(),
+        to: email,
+        subject: 'You are invited to Streamflix',
+        text:
+          `You have been invited to join Streamflix.\n\n` +
+          `Use this link to register:\n${registerUrl}\n\n`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #333;">You are invited to Streamflix</h2>
+            <p>Click the link below to create your account:</p>
+            <p><a href="${registerUrl}" style="background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">Create Account</a></p>
+            <p>If the button doesn't work, copy and paste this link into your browser:</p>
+            <p><a href="${registerUrl}">${registerUrl}</a></p>
+          </div>
+        `,
+      });
+      return true;
+    } catch (err) {
+      this.logger.error('[MAIL] Failed to send invitation email:', err);
+      this.logger.warn(`[DEV] Invitation link for ${email}: ${registerUrl}`);
+      return false;
+    }
+  }
 }

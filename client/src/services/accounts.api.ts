@@ -16,7 +16,7 @@ export function subscribe(quality: 'SD' | 'HD' | 'UHD', paymentMethod?: string) 
 }
 
 export function createInvitation(inviteeEmail: string) {
-  return authedFetch<{ invitationCode: string; registerUrl: string }>(
+  return authedFetch<{ invitationCode: string; emailSent: boolean }>(
     '/invitations',
     {
       method: 'POST',

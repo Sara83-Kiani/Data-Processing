@@ -9,7 +9,6 @@ export default function AccountPage() {
   const [msg, setMsg] = useState('');
 
   const [inviteEmail, setInviteEmail] = useState('');
-  const [inviteUrl, setInviteUrl] = useState('');
   const [invited, setInvited] = useState<any[]>([]);
 
   async function refresh() {
@@ -46,12 +45,10 @@ export default function AccountPage() {
     e.preventDefault();
     setErr('');
     setMsg('');
-    setInviteUrl('');
     try {
       const res = await createInvitation(inviteEmail);
-      setInviteUrl(res.registerUrl);
       setInviteEmail('');
-      setMsg('Invitation created.');
+      setMsg(res.emailSent ? 'Invitation sent.' : 'Invitation created. (Email not sent)');
       await refresh();
     } catch (e: any) {
       setErr(e?.message ?? 'Failed to create invitation');
@@ -137,17 +134,8 @@ export default function AccountPage() {
                   placeholder="friend@example.com"
                 />
               </label>
-              <button className="auth-button" type="submit">Create invitation link</button>
+              <button className="auth-button" type="submit">Send invitation</button>
             </form>
-
-            {inviteUrl ? (
-              <div className="auth-success account-invite-success">
-                Invitation link:
-                <div className="account-invite-url">
-                  <code>{inviteUrl}</code>
-                </div>
-              </div>
-            ) : null}
 
             <h2 className="account-section-title account-section-title-spaced">
               Invited people
