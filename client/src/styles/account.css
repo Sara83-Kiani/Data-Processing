@@ -73,11 +73,12 @@
 }
 
 .account-page .auth-link {
-  color: #60a5fa;
+  color: var(--primary-color);
   text-decoration: none;
 }
 
 .account-page .auth-link:hover {
+  color: var(--primary-hover);
   text-decoration: underline;
 }
 
@@ -87,7 +88,7 @@
   padding: 0 16px;
   border: none;
   border-radius: 8px;
-  background: #2f6fed;
+  background-color: var(--primary-color);
   color: white;
   font-weight: 600;
   line-height: 1.2;
@@ -95,6 +96,10 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
+}
+
+.account-page .auth-button:hover:not(:disabled) {
+  background-color: var(--primary-hover);
 }
 
 .account-page .auth-button:disabled {

@@ -2,8 +2,8 @@
 
 /* Global Styles for StreamFlix */
 :root {
-  --primary-color: #e50914;
-  --primary-hover: #f40612;
+  --primary-color: #3b5b8a;
+  --primary-hover: #4a6fa3;
   --background-dark: #141414;
   --background-card: #1f1f1f;
   --text-primary: #ffffff;
@@ -184,11 +184,12 @@ body {
 }
 
 .auth-link {
-  color: var(--text-primary);
+  color: var(--primary-color);
   text-decoration: none;
 }
 
 .auth-link:hover {
+  color: var(--primary-hover);
   text-decoration: underline;
 }
 
