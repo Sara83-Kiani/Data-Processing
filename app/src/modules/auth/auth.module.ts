@@ -18,23 +18,24 @@ function getJwtExpiresIn(): SignOptions['expiresIn'] {
   return raw as SignOptions['expiresIn'];
 }
 
+function requireEnv(name: string): string {
+  const val = process.env[name];
+  if (!val) {
+    throw new Error(`Missing required environment variable: ${name}`);
+  }
+  return val;
+}
+
 @Module({
   imports: [
     TypeOrmModule.forFeature([Account, ActivationToken, PasswordReset, Invitation]),
     JwtModule.register({
-      secret: process.env.JWT_SECRET ?? 'dev_secret_change_me',
+      secret: requireEnv('JWT_SECRET'), // ✅ always env
       signOptions: { expiresIn: getJwtExpiresIn() },
     }),
   ],
   controllers: [AuthController],
-  providers: [
-    AuthService,
-    JwtAuthGuard,
-  ],
-  exports: [
-    AuthService,
-    JwtModule,
-    JwtAuthGuard,
-  ],
+  providers: [AuthService, JwtAuthGuard],
+  exports: [AuthService, JwtModule, JwtAuthGuard],
 })
 export class AuthModule {}
