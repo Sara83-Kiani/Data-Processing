@@ -86,6 +86,8 @@ export class SubscriptionsService {
     const account = await this.accountRepo.findOne({ where: { accountId } });
     if (!account) throw new BadRequestException('Account not found');
 
+    const previousSubscriptionId = account.subscriptionId;
+
     const quality = dto.quality;
     const plan = this.planInfo(quality);
 
@@ -96,27 +98,41 @@ export class SubscriptionsService {
     const trialStart = isTrial ? now : null;
     const trialEnd = isTrial ? new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) : null;
 
-    const sub = await this.subRepo.save(
-      this.subRepo.create({
-        description: plan.desc,
-        price: plan.price,
-        quality,
-        isTrial,
-        trialStartDate: trialStart,
-        trialEndDate: trialEnd,
-        discountAmount: '0.00',
-        discountValidUntil: null,
-        startDate: now,
-        endDate: null,
-        status: 'ACTIVE',
-      }),
-    );
+    const sub = await this.accountRepo.manager.transaction(async (manager) => {
+      const txSubRepo = manager.getRepository(Subscription);
+      const txAccountRepo = manager.getRepository(Account);
 
-    account.subscriptionId = sub.subscriptionId;
-    account.paymentMethod = dto.paymentMethod ?? account.paymentMethod ?? null;
-    if (isTrial) account.isTrialUsed = true;
+      const newSub = await txSubRepo.save(
+        txSubRepo.create({
+          description: plan.desc,
+          price: plan.price,
+          quality,
+          isTrial,
+          trialStartDate: trialStart,
+          trialEndDate: trialEnd,
+          discountAmount: '0.00',
+          discountValidUntil: null,
+          startDate: now,
+          endDate: null,
+          status: 'ACTIVE',
+        }),
+      );
 
-    await this.accountRepo.save(account);
+      account.subscriptionId = newSub.subscriptionId;
+      account.paymentMethod = dto.paymentMethod ?? account.paymentMethod ?? null;
+      if (isTrial) account.isTrialUsed = true;
+
+      await txAccountRepo.save(account);
+
+      if (previousSubscriptionId) {
+        const stillUsed = await txAccountRepo.count({ where: { subscriptionId: previousSubscriptionId } });
+        if (stillUsed === 0) {
+          await txSubRepo.delete({ subscriptionId: previousSubscriptionId });
+        }
+      }
+
+      return newSub;
+    });
 
     // Apply discount only when it's NOT trial (paid subscription)
     if (!sub.isTrial) {
