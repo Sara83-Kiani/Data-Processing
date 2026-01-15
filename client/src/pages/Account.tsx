@@ -13,8 +13,6 @@ export default function AccountPage() {
   const [invited, setInvited] = useState<any[]>([]);
 
   async function refresh() {
-    setErr('');
-    setMsg('');
     setLoading(true);
     try {
       const s = await getSubscriptionMe();
