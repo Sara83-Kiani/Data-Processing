@@ -84,7 +84,7 @@ export default function Profiles() {
               <div
                 key={p.profileId}
                 style={{
-                  border: '1px solid #e6e8ef',
+                  border: '1px solid var(--border-color)',
                   borderRadius: 12,
                   padding: 12,
                   cursor: 'pointer',
@@ -115,7 +115,7 @@ export default function Profiles() {
           </div>
         )}
 
-        <hr style={{ margin: '16px 0', border: 'none', borderTop: '1px solid #eee' }} />
+        <hr style={{ margin: '16px 0', border: 'none', borderTop: '1px solid var(--border-color)' }} />
 
         <h2 style={{ margin: 0, fontSize: 16 }}>Add profile</h2>
 

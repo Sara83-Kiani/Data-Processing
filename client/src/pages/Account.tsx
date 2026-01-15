@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { createInvitation, getSubscriptionMe, listMyInvitations, subscribe } from '../services/accounts.api';
+import '../styles/account.css';
 
 export default function AccountPage() {
   const [sub, setSub] = useState<any>(null);
@@ -60,11 +61,11 @@ export default function AccountPage() {
   }
 
   return (
-    <div className="auth-page">
+    <div className="account-page">
       <div className="auth-card">
         <h1 className="auth-title">Account</h1>
 
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
+        <div className="account-nav">
           <a className="auth-link" href="/profiles">Back to profiles</a>
           <a className="auth-link" href="/">Home</a>
         </div>
@@ -76,10 +77,10 @@ export default function AccountPage() {
           <p>Loading...</p>
         ) : (
           <>
-            <h2 style={{ margin: '8px 0', fontSize: 16 }}>Subscription</h2>
+            <h2 className="account-section-title">Subscription</h2>
 
             {sub ? (
-              <div style={{ border: '1px solid #e6e8ef', borderRadius: 12, padding: 12 }}>
+              <div className="account-box">
                 <div><strong>Plan:</strong> {sub.quality}</div>
                 <div><strong>Status:</strong> {sub.status}</div>
                 <div><strong>Price:</strong> {sub.price}</div>
@@ -93,20 +94,38 @@ export default function AccountPage() {
                 )}
               </div>
             ) : (
-              <div style={{ border: '1px solid #e6e8ef', borderRadius: 12, padding: 12 }}>
+              <div className="account-box">
                 No subscription yet.
               </div>
             )}
 
-            <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-              <button className="auth-button" type="button" onClick={() => onSubscribe('SD')}>Choose SD</button>
-              <button className="auth-button" type="button" onClick={() => onSubscribe('HD')}>Choose HD</button>
-              <button className="auth-button" type="button" onClick={() => onSubscribe('UHD')}>Choose UHD</button>
+            <div className="account-plan-actions">
+              <button
+                className="auth-button"
+                type="button"
+                onClick={() => onSubscribe('SD')}
+              >
+                Choose SD
+              </button>
+              <button
+                className="auth-button"
+                type="button"
+                onClick={() => onSubscribe('HD')}
+              >
+                Choose HD
+              </button>
+              <button
+                className="auth-button"
+                type="button"
+                onClick={() => onSubscribe('UHD')}
+              >
+                Choose UHD
+              </button>
             </div>
 
-            <hr style={{ margin: '16px 0', border: 'none', borderTop: '1px solid #eee' }} />
+            <hr className="account-divider" />
 
-            <h2 style={{ margin: '8px 0', fontSize: 16 }}>Invite people</h2>
+            <h2 className="account-section-title">Invite people</h2>
 
             <form className="auth-form" onSubmit={onCreateInvite}>
               <label className="auth-label">
@@ -124,20 +143,22 @@ export default function AccountPage() {
             </form>
 
             {inviteUrl ? (
-              <div className="auth-success" style={{ marginTop: 12 }}>
+              <div className="auth-success account-invite-success">
                 Invitation link:
-                <div style={{ wordBreak: 'break-all', marginTop: 6 }}>
+                <div className="account-invite-url">
                   <code>{inviteUrl}</code>
                 </div>
               </div>
             ) : null}
 
-            <h2 style={{ margin: '16px 0 8px', fontSize: 16 }}>Invited people</h2>
+            <h2 className="account-section-title account-section-title-spaced">
+              Invited people
+            </h2>
 
             {invited.length ? (
-              <div style={{ display: 'grid', gap: 10 }}>
+              <div className="account-invited-list">
                 {invited.map((i) => (
-                  <div key={i.invitationId} style={{ border: '1px solid #e6e8ef', borderRadius: 12, padding: 12 }}>
+                  <div key={i.invitationId} className="account-box">
                     <div><strong>Email:</strong> {i.inviteeEmail}</div>
                     <div><strong>Status:</strong> {i.status}</div>
                     <div><strong>Code:</strong> {i.invitationCode}</div>
@@ -146,7 +167,7 @@ export default function AccountPage() {
                 ))}
               </div>
             ) : (
-              <div style={{ border: '1px solid #e6e8ef', borderRadius: 12, padding: 12 }}>
+              <div className="account-box">
                 No invitations yet.
               </div>
             )}
