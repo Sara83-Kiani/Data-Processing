@@ -1,10 +1,10 @@
-import { IsEnum, IsInt, IsOptional, IsString, MaxLength, Min, MinLength } from 'class-validator';
+import { IsEnum, IsInt, IsOptional, IsString, MaxLength, Min } from 'class-validator';
 
-export class CreateProfileDto {
+export class UpdateProfileDto {
+  @IsOptional()
   @IsString()
-  @MinLength(1)
   @MaxLength(60)
-  name: string;
+  name?: string;
 
   @IsOptional()
   @IsString()

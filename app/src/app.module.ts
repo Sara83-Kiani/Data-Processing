@@ -7,6 +7,7 @@ import { AccountsModule } from './modules/accounts/accounts.module';
 import { ProfilesModule } from './modules/profiles/profiles.module';
 import { ContentModule } from './modules/content/content.module';
 import { InvitationsModule } from './modules/invitations/invitations.module';
+import { SubscriptionsModule } from './modules/subscriptions/subscriptions.module';
 import { MailModule } from './modules/mail/mail.module';
 
 @Module({
@@ -31,6 +32,7 @@ import { MailModule } from './modules/mail/mail.module';
     ProfilesModule,
     ContentModule,
     InvitationsModule,
+    SubscriptionsModule,
   ],
 })
 export class AppModule {}

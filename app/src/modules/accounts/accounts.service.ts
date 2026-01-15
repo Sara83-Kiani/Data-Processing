@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Account } from './accounts.entity';
+import { Account } from './entities/accounts.entity';
 
 @Injectable()
 export class AccountsService {
@@ -16,13 +16,11 @@ export class AccountsService {
 
   async getAccountById(accountId: number): Promise<Account> {
     const account = await this.accountsRepo.findOne({
-      where: { id: accountId },
+      where: { accountId },
+      relations: ['subscription'],
     });
 
-    if (!account) {
-      throw new NotFoundException('Account not found');
-    }
-
+    if (!account) throw new NotFoundException('Account not found');
     return account;
   }
 }

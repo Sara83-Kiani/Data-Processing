@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import '../styles/register.css';
 import { registerUser } from '../services/auth.api';
 
@@ -6,9 +6,18 @@ export default function Register() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
+  const [invitationCode, setInvitationCode] = useState<string>('');
+
   const [loading, setLoading] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
+
+  useEffect(() => {
+    // If user arrived via invite link: /register?code=INV-XXXX
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get('code');
+    if (code) setInvitationCode(code);
+  }, []);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -17,10 +26,10 @@ export default function Register() {
     setLoading(true);
 
     try {
-      const msg = await registerUser(email, password);
+      // Pass invitationCode if present
+      const msg = await registerUser(email, password, invitationCode || undefined);
       setSuccessMsg(msg);
 
-      // optional: clear form
       setEmail('');
       setPassword('');
     } catch (err: any) {
@@ -34,6 +43,12 @@ export default function Register() {
     <div className="auth-page">
       <div className="auth-card">
         <h1 className="auth-title">Register</h1>
+
+        {invitationCode ? (
+          <div className="auth-info" style={{ marginBottom: 12 }}>
+            You’re joining via invitation: <strong>{invitationCode}</strong>
+          </div>
+        ) : null}
 
         <form className="auth-form" onSubmit={onSubmit}>
           <label className="auth-label">

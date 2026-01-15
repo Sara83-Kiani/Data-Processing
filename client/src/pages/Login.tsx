@@ -41,12 +41,8 @@ export default function Login() {
 
     try {
       const token = await loginUser(email, password);
-
-      // Minimal: store token so you can use it later for protected requests
       localStorage.setItem('accessToken', token);
-
-      // Minimal “success”: redirect to home (change if you have a different route)
-      window.location.href = '/';
+      window.location.href = '/profiles';
     } catch (err: any) {
       setErrorMsg(err?.message ?? 'Login failed.');
     } finally {

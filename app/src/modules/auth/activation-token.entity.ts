@@ -6,7 +6,7 @@ import {
   ManyToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
-import { Account } from '../accounts/accounts.entity';
+import { Account } from '../accounts/entities/accounts.entity';
 
 @Entity({ name: 'ActivationToken' })
 export class ActivationToken {
