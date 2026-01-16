@@ -41,8 +41,22 @@ export class SubscriptionsService {
     return { price: 17.99, desc: 'Premium UHD - Ultra HD streaming' };
   }
 
-  private async hasUsedDiscount(accountId: number): Promise<boolean> {
-    const c = await this.invitationRepo.count({
+  private referralDiscountAmount(): number {
+    const n = Number(process.env.REFERRAL_DISCOUNT_AMOUNT ?? 2);
+    return Number.isFinite(n) && n > 0 ? n : 2;
+  }
+
+  private referralDiscountDays(): number {
+    const n = Number(process.env.REFERRAL_DISCOUNT_DAYS ?? 30);
+    return Number.isFinite(n) && n > 0 ? n : 30;
+  }
+
+  private addDays(d: Date, days: number): Date {
+    return new Date(d.getTime() + days * 24 * 60 * 60 * 1000);
+  }
+
+  private async hasUsedDiscountTx(invitationRepo: Repository<Invitation>, accountId: number): Promise<boolean> {
+    const c = await invitationRepo.count({
       where: [
         { inviterAccountId: accountId, discountApplied: true } as any,
         { inviteeAccountId: accountId, discountApplied: true } as any,
@@ -51,56 +65,112 @@ export class SubscriptionsService {
     return c > 0;
   }
 
-  private async applyDiscountForInvitePair(invitation: Invitation) {
-    // fixed temporary monthly discount (amount). adjust as you like.
-    const DISCOUNT_AMOUNT = 2.0; // €2 / $2 off
-    const VALID_DAYS = 90; // 3 months
+  private async activeReferralDiscountForAccountTx(
+    invitationRepo: Repository<Invitation>,
+    accountId: number,
+    now: Date,
+  ): Promise<{ amount: string; validUntil: Date } | null> {
+    const inv = await invitationRepo.findOne({
+      where: [
+        {
+          inviterAccountId: accountId,
+          discountApplied: true,
+        } as any,
+        {
+          inviteeAccountId: accountId,
+          discountApplied: true,
+        } as any,
+      ],
+      order: { invitationId: 'DESC' as any },
+    });
 
-    const inviterId = invitation.inviterAccountId;
-    const inviteeId = invitation.inviteeAccountId!;
-    if (!inviterId || !inviteeId) return;
+    if (!inv?.discountValidUntil) return null;
+    if (inv.discountValidUntil.getTime() <= now.getTime()) return null;
+    if (!inv.discountAmount || Number(inv.discountAmount) <= 0) return null;
 
-    // only once per account
-    if (await this.hasUsedDiscount(inviterId)) return;
-    if (await this.hasUsedDiscount(inviteeId)) return;
-
-    const inviter = await this.accountRepo.findOne({ where: { accountId: inviterId }, relations: ['subscription'] });
-    const invitee = await this.accountRepo.findOne({ where: { accountId: inviteeId }, relations: ['subscription'] });
-    if (!inviter?.subscription || !invitee?.subscription) return;
-
-    const validUntil = new Date(Date.now() + VALID_DAYS * 24 * 60 * 60 * 1000);
-
-    inviter.subscription.discountAmount = DISCOUNT_AMOUNT.toFixed(2);
-    inviter.subscription.discountValidUntil = validUntil;
-
-    invitee.subscription.discountAmount = DISCOUNT_AMOUNT.toFixed(2);
-    invitee.subscription.discountValidUntil = validUntil;
-
-    await this.subRepo.save([inviter.subscription, invitee.subscription]);
-
-    invitation.discountApplied = true;
-    await this.invitationRepo.save(invitation);
+    return { amount: Number(inv.discountAmount).toFixed(2), validUntil: inv.discountValidUntil };
   }
 
   async subscribe(accountId: number, dto: SubscribeDto) {
-    const account = await this.accountRepo.findOne({ where: { accountId } });
-    if (!account) throw new BadRequestException('Account not found');
-
-    const previousSubscriptionId = account.subscriptionId;
-
     const quality = dto.quality;
     const plan = this.planInfo(quality);
 
     const now = new Date();
 
-    // Trial logic: first time only
-    const isTrial = !account.isTrialUsed;
-    const trialStart = isTrial ? now : null;
-    const trialEnd = isTrial ? new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) : null;
-
-    const sub = await this.accountRepo.manager.transaction(async (manager) => {
+    return this.accountRepo.manager.transaction(async (manager) => {
       const txSubRepo = manager.getRepository(Subscription);
       const txAccountRepo = manager.getRepository(Account);
+      const txInvitationRepo = manager.getRepository(Invitation);
+
+      const account = await txAccountRepo.findOne({ where: { accountId } });
+      if (!account) throw new BadRequestException('Account not found');
+
+      const previousSubscriptionId = account.subscriptionId;
+
+      // Trial logic: first time only
+      const isInvitedAccount = !!account.referredByAccountId;
+      const isTrial = !account.isTrialUsed && !isInvitedAccount;
+      const trialStart = isTrial ? now : null;
+      const trialEnd = isTrial ? new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) : null;
+
+      // If the account already has an active referral discount window, preserve it
+      const existingDiscount = await this.activeReferralDiscountForAccountTx(txInvitationRepo, accountId, now);
+
+      // If this is a paid subscription for an invitee, try to activate the invitation discount window
+      let activatedDiscount: { amount: string; validUntil: Date } | null = null;
+
+      if (!isTrial) {
+        const inv = await txInvitationRepo.findOne({
+          where: {
+            inviteeAccountId: accountId,
+            status: 'ACCEPTED' as any,
+            discountApplied: false,
+          } as any,
+        });
+
+        if (inv) {
+          const inviterId = inv.inviterAccountId;
+          const inviteeId = inv.inviteeAccountId;
+
+          if (!inviterId || !inviteeId) {
+            inv.status = 'EXPIRED';
+            await txInvitationRepo.save(inv);
+          } else {
+            const inviterUsed = await this.hasUsedDiscountTx(txInvitationRepo, inviterId);
+            const inviteeUsed = await this.hasUsedDiscountTx(txInvitationRepo, inviteeId);
+
+            if (inviterUsed || inviteeUsed) {
+              inv.status = 'EXPIRED';
+              await txInvitationRepo.save(inv);
+            } else {
+              const amount = this.referralDiscountAmount();
+              const validUntil = this.addDays(now, this.referralDiscountDays());
+
+              inv.discountApplied = true;
+              inv.discountAmount = amount.toFixed(2);
+              inv.discountStartedAt = now;
+              inv.discountValidUntil = validUntil;
+
+              await txInvitationRepo.save(inv);
+
+              activatedDiscount = { amount: amount.toFixed(2), validUntil };
+
+              // Apply to inviter's current subscription if they have one (if not, it will be applied on their next subscribe during the window)
+              const inviter = await txAccountRepo.findOne({ where: { accountId: inviterId } });
+              if (inviter?.subscriptionId) {
+                const inviterSub = await txSubRepo.findOne({ where: { subscriptionId: inviter.subscriptionId } });
+                if (inviterSub) {
+                  inviterSub.discountAmount = activatedDiscount.amount;
+                  inviterSub.discountValidUntil = activatedDiscount.validUntil;
+                  await txSubRepo.save(inviterSub);
+                }
+              }
+            }
+          }
+        }
+      }
+
+      const discountToApply = activatedDiscount ?? existingDiscount;
 
       const newSub = await txSubRepo.save(
         txSubRepo.create({
@@ -110,8 +180,8 @@ export class SubscriptionsService {
           isTrial,
           trialStartDate: trialStart,
           trialEndDate: trialEnd,
-          discountAmount: '0.00',
-          discountValidUntil: null,
+          discountAmount: discountToApply ? discountToApply.amount : '0.00',
+          discountValidUntil: discountToApply ? discountToApply.validUntil : null,
           startDate: now,
           endDate: null,
           status: 'ACTIVE',
@@ -120,7 +190,7 @@ export class SubscriptionsService {
 
       account.subscriptionId = newSub.subscriptionId;
       account.paymentMethod = dto.paymentMethod ?? account.paymentMethod ?? null;
-      if (isTrial) account.isTrialUsed = true;
+      if (isTrial || isInvitedAccount) account.isTrialUsed = true;
 
       await txAccountRepo.save(account);
 
@@ -131,27 +201,10 @@ export class SubscriptionsService {
         }
       }
 
-      return newSub;
+      return {
+        message: isTrial ? 'Trial started (7 days).' : 'Subscription activated.',
+        subscription: newSub,
+      };
     });
-
-    // Apply discount only when it's NOT trial (paid subscription)
-    if (!sub.isTrial) {
-      const inv = await this.invitationRepo.findOne({
-        where: {
-          inviteeAccountId: accountId,
-          status: 'ACCEPTED' as any,
-          discountApplied: false,
-        } as any,
-      });
-
-      if (inv) await this.applyDiscountForInvitePair(inv);
-    }
-
-    return {
-      message: isTrial
-        ? 'Trial started (7 days).'
-        : 'Subscription activated.',
-      subscription: sub,
-    };
   }
 }

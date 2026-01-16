@@ -28,6 +28,15 @@ export class Invitation {
   @Column({ name: 'accepted_at', type: 'timestamp', nullable: true })
   acceptedAt: Date | null;
 
+  @Column({ name: 'discount_amount', type: 'decimal', precision: 5, scale: 2, default: 0.0 })
+  discountAmount: string; // TypeORM maps DECIMAL to string
+
+  @Column({ name: 'discount_started_at', type: 'datetime', nullable: true })
+  discountStartedAt: Date | null;
+
+  @Column({ name: 'discount_valid_until', type: 'datetime', nullable: true })
+  discountValidUntil: Date | null;
+
   @Column({ name: 'discount_applied', type: 'boolean', default: false })
   discountApplied: boolean;
 
