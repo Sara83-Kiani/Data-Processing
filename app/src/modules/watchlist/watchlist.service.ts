@@ -52,10 +52,10 @@ export class WatchlistService {
   ) {
     await this.mustOwnProfile(accountId, profileId);
 
-    // Validate: must have movieId OR (seriesId AND episodeId)
-    if (!dto.movieId && (!dto.seriesId || !dto.episodeId)) {
+    // Validate: must have movieId OR seriesId
+    if (!dto.movieId && !dto.seriesId) {
       throw new BadRequestException(
-        'Must provide movieId or both seriesId and episodeId',
+        'Must provide movieId or seriesId',
       );
     }
 

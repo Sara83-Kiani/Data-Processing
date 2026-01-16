@@ -275,17 +275,17 @@ CREATE TABLE IF NOT EXISTS `Watchlist` (
 
 -- a watchlist item must point either to:
 -- a movie (movie_id NOT NULL), OR
--- a specific episode (series_id NOT NULL AND episode_id NOT NULL).
--- If movie_id is NULL, then BOTH series_id and episode_id must be non-NULL.
+-- a series (series_id NOT NULL), optionally with episode_id.
+-- At least one of movie_id or series_id must be non-NULL.
 DELIMITER //
 
 CREATE TRIGGER watchlist_check_before_insert
 BEFORE INSERT ON Watchlist
 FOR EACH ROW
 BEGIN
-    IF (NEW.movie_id IS NULL AND (NEW.series_id IS NULL OR NEW.episode_id IS NULL)) THEN
+    IF (NEW.movie_id IS NULL AND NEW.series_id IS NULL) THEN
         SIGNAL SQLSTATE '45000'
-            SET MESSAGE_TEXT = 'Watchlist item must reference a movie or a (series, episode) pair';
+            SET MESSAGE_TEXT = 'Watchlist item must reference a movie or a series';
     END IF;
 END //
 
@@ -293,9 +293,9 @@ CREATE TRIGGER watchlist_check_before_update
 BEFORE UPDATE ON Watchlist
 FOR EACH ROW
 BEGIN
-    IF (NEW.movie_id IS NULL AND (NEW.series_id IS NULL OR NEW.episode_id IS NULL)) THEN
+    IF (NEW.movie_id IS NULL AND NEW.series_id IS NULL) THEN
         SIGNAL SQLSTATE '45000'
-            SET MESSAGE_TEXT = 'Watchlist item must reference a movie or a (series, episode) pair';
+            SET MESSAGE_TEXT = 'Watchlist item must reference a movie or a series';
     END IF;
 END //
 
