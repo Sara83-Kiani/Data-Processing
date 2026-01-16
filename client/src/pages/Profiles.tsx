@@ -1,7 +1,11 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { createProfile, deleteProfile, getProfiles, type Profile } from '../services/profiles.api';
+import { useProfile } from '../context/ProfileContext';
 
 export default function Profiles() {
+  const navigate = useNavigate();
+  const { setActiveProfile, setProfiles: setContextProfiles } = useProfile();
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState('');
@@ -46,9 +50,19 @@ export default function Profiles() {
   }
 
   function selectProfile(p: Profile) {
-    localStorage.setItem('activeProfileId', String(p.profileId));
-    localStorage.setItem('activeProfileName', p.name);
-    window.location.href = '/';
+    setActiveProfile({ 
+      profileId: p.profileId, 
+      name: p.name, 
+      age: p.age, 
+      image: avatarUrlForProfile(p.profileId) 
+    });
+    setContextProfiles(profiles.map(pr => ({
+      profileId: pr.profileId,
+      name: pr.name,
+      age: pr.age,
+      image: avatarUrlForProfile(pr.profileId)
+    })));
+    navigate('/');
   }
 
   async function onDelete(p: Profile) {
