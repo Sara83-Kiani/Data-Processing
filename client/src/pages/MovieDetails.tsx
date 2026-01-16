@@ -1,15 +1,20 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getMovieById, type MovieDetail } from '../services/titles.api';
+import { addOrUpdateHistory, getHistory, type HistoryItem } from '../services/history.api';
+import { useProfile } from '../context/ProfileContext';
 import WatchlistButton from '../components/WatchlistButton';
 import ContentWarnings from '../components/ContentWarnings';
 
 export default function MovieDetails() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { activeProfile } = useProfile();
   const [movie, setMovie] = useState<MovieDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [historyEntry, setHistoryEntry] = useState<HistoryItem | null>(null);
+  const [actionLoading, setActionLoading] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -22,6 +27,51 @@ export default function MovieDetails() {
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
   }, [id]);
+
+  useEffect(() => {
+    if (!activeProfile || !id) {
+      setHistoryEntry(null);
+      return;
+    }
+    getHistory(activeProfile.profileId)
+      .then((history) => {
+        const entry = history.find((h) => h.movieId === Number(id));
+        setHistoryEntry(entry || null);
+      })
+      .catch(() => setHistoryEntry(null));
+  }, [activeProfile, id]);
+
+  const handleStartWatching = async () => {
+    if (!activeProfile || !movie) return;
+    setActionLoading(true);
+    try {
+      const entry = await addOrUpdateHistory(activeProfile.profileId, {
+        movieId: movie.movieId,
+        completed: false,
+      });
+      setHistoryEntry(entry);
+    } catch (err) {
+      console.error('Failed to start watching:', err);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleMarkFinished = async () => {
+    if (!activeProfile || !movie) return;
+    setActionLoading(true);
+    try {
+      const entry = await addOrUpdateHistory(activeProfile.profileId, {
+        movieId: movie.movieId,
+        completed: true,
+      });
+      setHistoryEntry(entry);
+    } catch (err) {
+      console.error('Failed to mark as finished:', err);
+    } finally {
+      setActionLoading(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -83,8 +133,59 @@ export default function MovieDetails() {
 
         <ContentWarnings classification={movie.classification?.name} />
 
-        <div style={{ marginTop: 24 }}>
+        <div style={{ marginTop: 24, display: 'flex', gap: 12, flexWrap: 'wrap' }}>
           <WatchlistButton movieId={movie.movieId} />
+          
+          {!historyEntry ? (
+            <button
+              onClick={handleStartWatching}
+              disabled={actionLoading}
+              style={{
+                backgroundColor: '#46d369',
+                color: '#fff',
+                border: 'none',
+                padding: '10px 20px',
+                borderRadius: 4,
+                fontSize: 14,
+                fontWeight: 'bold',
+                cursor: actionLoading ? 'not-allowed' : 'pointer',
+                opacity: actionLoading ? 0.7 : 1,
+              }}
+            >
+              {actionLoading ? 'Starting...' : '▶ Start Watching'}
+            </button>
+          ) : !historyEntry.completed ? (
+            <button
+              onClick={handleMarkFinished}
+              disabled={actionLoading}
+              style={{
+                backgroundColor: '#2196f3',
+                color: '#fff',
+                border: 'none',
+                padding: '10px 20px',
+                borderRadius: 4,
+                fontSize: 14,
+                fontWeight: 'bold',
+                cursor: actionLoading ? 'not-allowed' : 'pointer',
+                opacity: actionLoading ? 0.7 : 1,
+              }}
+            >
+              {actionLoading ? 'Updating...' : '✓ Mark as Finished'}
+            </button>
+          ) : (
+            <span
+              style={{
+                backgroundColor: '#333',
+                color: '#46d369',
+                padding: '10px 20px',
+                borderRadius: 4,
+                fontSize: 14,
+                fontWeight: 'bold',
+              }}
+            >
+              ✓ Watched
+            </span>
+          )}
         </div>
       </div>
     </div>

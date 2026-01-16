@@ -7,6 +7,7 @@ export interface TitleCardProps {
   type: 'movie' | 'series';
   classification?: string;
   quality?: string;
+  progress?: string;
 }
 
 export default function TitleCard({
@@ -16,6 +17,7 @@ export default function TitleCard({
   type,
   classification,
   quality,
+  progress,
 }: TitleCardProps) {
   const navigate = useNavigate();
 
@@ -102,6 +104,26 @@ export default function TitleCard({
           >
             {quality}
           </span>
+        )}
+        {progress && (
+          <div
+            style={{
+              position: 'absolute',
+              bottom: 0,
+              left: 0,
+              right: 0,
+              height: 4,
+              backgroundColor: 'rgba(255,255,255,0.3)',
+            }}
+          >
+            <div
+              style={{
+                height: '100%',
+                backgroundColor: '#e50914',
+                width: '40%',
+              }}
+            />
+          </div>
         )}
       </div>
       <p

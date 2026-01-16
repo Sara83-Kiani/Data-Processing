@@ -49,8 +49,8 @@ export default function Navbar() {
           <Link to="/" style={linkStyle}>Home</Link>
           <Link to="/films" style={linkStyle}>Films</Link>
           <Link to="/series" style={linkStyle}>Series</Link>
-          <Link to="/my-list" style={linkStyle}>My List</Link>
-          <Link to="/" style={linkStyle}>History</Link>
+          <Link to="/my-list" style={linkStyle}>Watchlist</Link>
+          <Link to="/history" style={linkStyle}>History</Link>
         </div>
       </div>
 

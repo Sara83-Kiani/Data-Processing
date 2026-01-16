@@ -41,6 +41,13 @@ export async function authedFetch<T>(
 
   const data = await res.json().catch(() => ({}));
 
+  if (res.status === 401) {
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('activeProfile');
+    window.location.href = '/login';
+    throw new Error('Session expired. Please log in again.');
+  }
+
   if (!res.ok) {
     throw new Error(extractErrorMessage(data));
   }

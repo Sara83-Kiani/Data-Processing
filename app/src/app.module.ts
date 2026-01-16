@@ -9,6 +9,8 @@ import { ContentModule } from './modules/content/content.module';
 import { InvitationsModule } from './modules/invitations/invitations.module';
 import { SubscriptionsModule } from './modules/subscriptions/subscriptions.module';
 import { MailModule } from './modules/mail/mail.module';
+import { HistoryModule } from './modules/history/history.module';
+import { WatchlistModule } from './modules/watchlist/watchlist.module';
 
 @Module({
   imports: [
@@ -34,6 +36,8 @@ import { MailModule } from './modules/mail/mail.module';
     ContentModule,
     InvitationsModule,
     SubscriptionsModule,
+    HistoryModule,
+    WatchlistModule,
   ],
 })
 export class AppModule {}

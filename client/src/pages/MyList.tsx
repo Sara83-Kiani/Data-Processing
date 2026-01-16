@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useProfile } from '../context/ProfileContext';
 import { getWatchlist, removeFromWatchlist, type WatchlistItem } from '../services/watchlist.api';
 import TitleCard from '../components/TitleCard';
+import EmptyState from '../components/EmptyState';
 
 export default function MyList() {
   const navigate = useNavigate();
@@ -77,28 +78,13 @@ export default function MyList() {
       <h1 style={{ color: '#fff', fontSize: 28, marginBottom: 24 }}>My List</h1>
 
       {watchlist.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '48px 0' }}>
-          <p style={{ color: '#999', fontSize: 18, marginBottom: 16 }}>
-            Your watchlist is empty
-          </p>
-          <p style={{ color: '#666', marginBottom: 24 }}>
-            Browse movies and series to add them to your list
-          </p>
-          <button
-            onClick={() => navigate('/')}
-            style={{
-              backgroundColor: '#e50914',
-              color: '#fff',
-              border: 'none',
-              padding: '12px 24px',
-              borderRadius: 4,
-              cursor: 'pointer',
-              fontSize: 16,
-            }}
-          >
-            Browse Content
-          </button>
-        </div>
+        <EmptyState
+          icon="📺"
+          title="No items yet"
+          description="Browse movies and series to add them to your list"
+          actionLabel="Browse Content"
+          actionPath="/"
+        />
       ) : (
         <div
           style={{

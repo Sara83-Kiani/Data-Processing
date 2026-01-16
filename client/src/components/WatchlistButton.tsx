@@ -77,7 +77,7 @@ export default function WatchlistButton({
       title={!activeProfile ? 'Select a profile to add to watchlist' : ''}
     >
       <span style={{ fontSize: 18 }}>{inWatchlist ? '✓' : '+'}</span>
-      {loading ? 'Loading...' : inWatchlist ? 'In My List' : 'Add to My List'}
+      {loading ? 'Loading...' : inWatchlist ? 'In Watchlist' : 'Add to Watchlist'}
     </button>
   );
 }

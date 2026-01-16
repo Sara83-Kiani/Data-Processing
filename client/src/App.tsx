@@ -5,6 +5,8 @@ import Series from './pages/Series';
 import MovieDetails from './pages/MovieDetails';
 import SeriesDetails from './pages/SeriesDetails';
 import MyList from './pages/MyList';
+import History from './pages/History';
+import Admin from './pages/Admin';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import ForgotPassword from './pages/ForgotPassword';
@@ -14,6 +16,9 @@ import Account from './pages/Account';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import { ProfileProvider } from './context/ProfileContext';
+import { AuthProvider } from './context/AuthContext';
+import AuthGuard from './components/AuthGuard';
+import ProfileGuard from './components/ProfileGuard';
 
 function AppLayout() {
   const location = useLocation();
@@ -29,14 +34,16 @@ function AppLayout() {
           <Route path="/register" element={<Register />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
-          <Route path="/profiles" element={<Profiles />} />
-          <Route path="/account" element={<Account />} />
-          <Route path="/" element={<Home />} />
-          <Route path="/films" element={<Films />} />
-          <Route path="/series" element={<Series />} />
-          <Route path="/movies/:id" element={<MovieDetails />} />
-          <Route path="/series/:id" element={<SeriesDetails />} />
-          <Route path="/my-list" element={<MyList />} />
+          <Route path="/profiles" element={<AuthGuard><Profiles /></AuthGuard>} />
+          <Route path="/account" element={<AuthGuard><Account /></AuthGuard>} />
+          <Route path="/" element={<ProfileGuard><Home /></ProfileGuard>} />
+          <Route path="/films" element={<ProfileGuard><Films /></ProfileGuard>} />
+          <Route path="/series" element={<ProfileGuard><Series /></ProfileGuard>} />
+          <Route path="/movies/:id" element={<ProfileGuard><MovieDetails /></ProfileGuard>} />
+          <Route path="/series/:id" element={<ProfileGuard><SeriesDetails /></ProfileGuard>} />
+          <Route path="/my-list" element={<AuthGuard><ProfileGuard><MyList /></ProfileGuard></AuthGuard>} />
+          <Route path="/history" element={<AuthGuard><ProfileGuard><History /></ProfileGuard></AuthGuard>} />
+          <Route path="/admin" element={<AuthGuard><Admin /></AuthGuard>} />
         </Routes>
       </main>
       {!isAuthRoute && <Footer />}
@@ -46,10 +53,12 @@ function AppLayout() {
 
 export default function App() {
   return (
-    <ProfileProvider>
-      <BrowserRouter>
-        <AppLayout />
-      </BrowserRouter>
-    </ProfileProvider>
+    <AuthProvider>
+      <ProfileProvider>
+        <BrowserRouter>
+          <AppLayout />
+        </BrowserRouter>
+      </ProfileProvider>
+    </AuthProvider>
   );
 }

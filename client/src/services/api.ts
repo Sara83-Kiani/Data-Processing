@@ -26,6 +26,13 @@ export async function apiFetch<T>(
     data = { message: text };
   }
 
+  if (res.status === 401) {
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('activeProfile');
+    window.location.href = '/login';
+    throw new Error('Session expired. Please log in again.');
+  }
+
   if (!res.ok) {
     throw new Error(data?.message ?? `Request failed: ${res.status}`);
   }

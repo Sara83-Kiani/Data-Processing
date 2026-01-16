@@ -1,5 +1,9 @@
-import { Controller, Get, Param, Query, ParseIntPipe } from '@nestjs/common';
+import { Controller, Get, Post, Delete, Param, Query, Body, ParseIntPipe, UseGuards } from '@nestjs/common';
 import { ContentService } from './content.service';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { CreateMovieDto } from './dto/create-movie.dto';
+import { CreateSeriesDto } from './dto/create-series.dto';
+import { CreateEpisodeDto } from './dto/create-episode.dto';
 
 /**
  * Content Controller
@@ -177,6 +181,132 @@ export class ContentController {
       return {
         success: true,
         data: classifications,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.message,
+      };
+    }
+  }
+
+  /**
+   * Create a new movie
+   * POST /content/movies
+   */
+  @Post('movies')
+  @UseGuards(JwtAuthGuard)
+  async createMovie(@Body() dto: CreateMovieDto) {
+    try {
+      const movie = await this.contentService.createMovie(dto);
+      return {
+        success: true,
+        data: movie,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.message,
+      };
+    }
+  }
+
+  /**
+   * Create a new series
+   * POST /content/series
+   */
+  @Post('series')
+  @UseGuards(JwtAuthGuard)
+  async createSeries(@Body() dto: CreateSeriesDto) {
+    try {
+      const series = await this.contentService.createSeries(dto);
+      return {
+        success: true,
+        data: series,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.message,
+      };
+    }
+  }
+
+  /**
+   * Create a new episode
+   * POST /content/episodes
+   */
+  @Post('episodes')
+  @UseGuards(JwtAuthGuard)
+  async createEpisode(@Body() dto: CreateEpisodeDto) {
+    try {
+      const episode = await this.contentService.createEpisode(dto);
+      return {
+        success: true,
+        data: episode,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.message,
+      };
+    }
+  }
+
+  /**
+   * Delete a movie
+   * DELETE /content/movies/:id
+   */
+  @Delete('movies/:id')
+  @UseGuards(JwtAuthGuard)
+  async deleteMovie(@Param('id', ParseIntPipe) id: number) {
+    try {
+      await this.contentService.deleteMovie(id);
+      return {
+        success: true,
+        message: 'Movie deleted',
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.message,
+      };
+    }
+  }
+
+  /**
+   * Delete a series
+   * DELETE /content/series/:id
+   */
+  @Delete('series/:id')
+  @UseGuards(JwtAuthGuard)
+  async deleteSeries(@Param('id', ParseIntPipe) id: number) {
+    try {
+      await this.contentService.deleteSeries(id);
+      return {
+        success: true,
+        message: 'Series deleted',
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.message,
+      };
+    }
+  }
+
+  /**
+   * Delete an episode
+   * DELETE /content/episodes/:id
+   */
+  @Delete('episodes/:id')
+  @UseGuards(JwtAuthGuard)
+  async deleteEpisode(@Param('id', ParseIntPipe) id: number) {
+    try {
+      await this.contentService.deleteEpisode(id);
+      return {
+        success: true,
+        message: 'Episode deleted',
       };
     } catch (error) {
       return {
