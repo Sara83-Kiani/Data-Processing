@@ -9,33 +9,30 @@ import { AuthService } from './auth.service';
 import { Account } from '../accounts/entities/accounts.entity';
 import { ActivationToken } from './activation-token.entity';
 import { PasswordReset } from './entities/password-reset.entity';
-import { Invitation } from '../invitations/entities/invitation.entity';
-import { JwtAuthGuard } from './guards/jwt-auth.guard';
 
 function getJwtExpiresIn(): SignOptions['expiresIn'] {
-  const raw = process.env.JWT_EXPIRES_IN ?? '3600';
-  if (/^\d+$/.test(raw)) return Number(raw);
-  return raw as SignOptions['expiresIn'];
-}
+  const raw = process.env.JWT_EXPIRES_IN ?? '3600'; // default: 1 hour in seconds
 
-function requireEnv(name: string): string {
-  const val = process.env[name];
-  if (!val) {
-    throw new Error(`Missing required environment variable: ${name}`);
-  }
-  return val;
+  // If it's all digits, treat it as seconds
+  if (/^\d+$/.test(raw)) return Number(raw);
+
+  // Otherwise treat it as a duration string (e.g. '1h', '7d', '15m')
+  return raw as SignOptions['expiresIn'];
 }
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Account, ActivationToken, PasswordReset, Invitation]),
+    TypeOrmModule.forFeature([Account, ActivationToken, PasswordReset]),
+
     JwtModule.register({
-      secret: requireEnv('JWT_SECRET'), // ✅ always env
-      signOptions: { expiresIn: getJwtExpiresIn() },
+      secret: process.env.JWT_SECRET ?? 'dev_secret_change_me',
+      signOptions: {
+        expiresIn: getJwtExpiresIn(),
+      },
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtAuthGuard],
-  exports: [AuthService, JwtModule, JwtAuthGuard],
+  providers: [AuthService],
+  exports: [AuthService, JwtModule],
 })
 export class AuthModule {}

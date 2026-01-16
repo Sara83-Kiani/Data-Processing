@@ -1,38 +1,75 @@
 import {
-  Column,
   Entity,
-  JoinColumn,
-  ManyToOne,
-  OneToMany,
   PrimaryGeneratedColumn,
+  Column,
+  ManyToOne,
+  JoinColumn,
 } from 'typeorm';
+import { BaseEntity } from '../../../common/entities/base.entity';
 import { Account } from '../../accounts/entities/accounts.entity';
-import { ProfilePreference } from './profile-preference.entity';
 
-@Entity({ name: 'Profile' })
-export class Profile {
-  @PrimaryGeneratedColumn({ name: 'profile_id', type: 'int' })
-  profileId: number;
+/**
+ * Profile Entity - Represents user profiles within an account
+ * Each account can have up to 4 profiles
+ */
+@Entity('Profile')
+export class Profile extends BaseEntity {
+  @PrimaryGeneratedColumn({ name: 'profile_id' })
+  public profileId: number;
 
-  @Column({ name: 'account_id', type: 'int' })
-  accountId: number;
+  @Column({ name: 'account_id' })
+  public accountId: number;
 
-  @ManyToOne(() => Account, (a) => a.profiles, { onDelete: 'CASCADE' })
+  @Column({ length: 60 })
+  public name: string;
+
+  @Column({ default: 'placeholder.jpeg' })
+  public image: string;
+
+  @Column({ default: 18 })
+  public age: number;
+
+  @Column({
+    type: 'enum',
+    enum: ['ENGLISH', 'DUTCH'],
+    default: 'ENGLISH',
+  })
+  public language: string;
+
+  // Relationships
+  @ManyToOne(() => Account, (account) => account.profiles)
   @JoinColumn({ name: 'account_id' })
-  account: Account;
+  public account: Account;
 
-  @Column({ name: 'name', type: 'varchar', length: 60 })
-  name: string;
 
-  @Column({ name: 'image', type: 'varchar', length: 255, default: 'placeholder.jpeg' })
-  image: string;
+  /**
+   * Check if profile is for a child (under 13)
+   */
+  public isChildProfile(): boolean {
+    return this.age < 13;
+  }
 
-  @Column({ name: 'age', type: 'int', default: 18 })
-  age: number;
+  /**
+   * Get age-appropriate content filter
+   */
+  public getAgeFilter(): number {
+    return this.age;
+  }
 
-  @Column({ name: 'language', type: 'enum', enum: ['ENGLISH', 'DUTCH'], default: 'ENGLISH' })
-  language: 'ENGLISH' | 'DUTCH';
+  /**
+   * Validate profile data
+   */
+  public validate(): boolean {
+    return !!(this.name && this.accountId && this.age >= 0);
+  }
 
-  @OneToMany(() => ProfilePreference, (pp) => pp.profile)
-  preferences: ProfilePreference[];
+  /**
+   * Update profile information
+   */
+  public updateInfo(name?: string, age?: number, image?: string, language?: string): void {
+    if (name) this.name = name;
+    if (age !== undefined) this.age = age;
+    if (image) this.image = image;
+    if (language) this.language = language;
+  }
 }

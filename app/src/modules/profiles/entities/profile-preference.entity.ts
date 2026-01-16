@@ -14,7 +14,7 @@ export class ProfilePreference {
   @PrimaryColumn({ name: 'genre_id', type: 'int' })
   genreId: number;
 
-  @ManyToOne(() => Profile, (p) => p.preferences, { onDelete: 'CASCADE' })
+  @ManyToOne(() => Profile, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'profile_id' })
   profile: Profile;
 

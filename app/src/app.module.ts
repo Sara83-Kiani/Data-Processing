@@ -7,8 +7,9 @@ import { AccountsModule } from './modules/accounts/accounts.module';
 import { ProfilesModule } from './modules/profiles/profiles.module';
 import { ContentModule } from './modules/content/content.module';
 import { InvitationsModule } from './modules/invitations/invitations.module';
-import { SubscriptionsModule } from './modules/subscriptions/subscriptions.module';
 import { MailModule } from './modules/mail/mail.module';
+import { WatchlistModule } from './modules/watchlist/watchlist.module';
+import { SubscriptionsModule } from './modules/subscriptions/subscriptions.module';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { MailModule } from './modules/mail/mail.module';
     ProfilesModule,
     ContentModule,
     InvitationsModule,
+    WatchlistModule,
     SubscriptionsModule,
   ],
 })

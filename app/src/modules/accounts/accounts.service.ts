@@ -17,10 +17,12 @@ export class AccountsService {
   async getAccountById(accountId: number): Promise<Account> {
     const account = await this.accountsRepo.findOne({
       where: { accountId },
-      relations: ['subscription'],
     });
 
-    if (!account) throw new NotFoundException('Account not found');
+    if (!account) {
+      throw new NotFoundException('Account not found');
+    }
+
     return account;
   }
 }

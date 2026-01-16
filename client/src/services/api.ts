@@ -27,6 +27,10 @@ export async function apiFetch<T>(
   }
 
   if (!res.ok) {
+    if (res.status === 401) {
+      localStorage.removeItem('accessToken');
+      window.location.href = '/login';
+    }
     throw new Error(data?.message ?? `Request failed: ${res.status}`);
   }
 

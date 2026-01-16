@@ -12,6 +12,6 @@ import { AuthModule } from '../auth/auth.module';
   ],
   controllers: [AccountsController],
   providers: [AccountsService],
-  exports: [AccountsService, TypeOrmModule],
+  exports: [AccountsService],
 })
 export class AccountsModule {}
