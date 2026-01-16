@@ -25,6 +25,7 @@ import { MailModule } from './modules/mail/mail.module';
       database: process.env.DB_NAME ?? 'mydb',
       autoLoadEntities: true,
       synchronize: false,
+      timezone: 'local',
     }),
     MailModule,
     AuthModule,

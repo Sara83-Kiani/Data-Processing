@@ -51,8 +51,8 @@ export class AuthService {
   }
 
   private lockMinutes(): number {
-    const n = Number(process.env.AUTH_LOCK_MINUTES ?? 15);
-    return Number.isFinite(n) && n > 0 ? n : 15;
+    const n = Number(process.env.AUTH_LOCK_MINUTES ?? 60);
+    return Number.isFinite(n) && n > 0 ? n : 60;
   }
 
   private activationTtlHours(): number {
