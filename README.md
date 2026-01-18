@@ -68,16 +68,34 @@ You'll need Docker installed on your machine:
 2. **Create the environment file**  
    Rename `.env.TEMPLATE` to `.env` and configure your database settings:
    ```env
-   # Database Configuration
-   DB_HOST=mysql
-   DB_PORT=3306
-   DB_USERNAME=root
-   DB_PASSWORD=rootpassword
-   DB_DATABASE=mydb
+# Specific project name
+COMPOSE_PROJECT_NAME="your_project_name"
 
-   # JWT Configuration
-   JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
-   JWT_EXPIRES_IN=1d
+# Environment Variables for database.
+DB_SERVER="mysql"
+DB_ROOT_USER="your_root_user"
+DB_ROOT_PASSWORD="your_root_password"
+DB_NAME="your_db_name"
+DB_PORT=3306
+
+# For locking users
+AUTH_LOCK_MINUTES=your_desired_lock_minutes
+TZ=your_timezone
+
+# Nest.js
+APP_PORT=3000
+NODE_ENV=development
+
+# Mail (Gmail SMTP)
+SMTP_HOST="smtp.gmail.com"
+SMTP_PORT=587
+SMTP_USER="your_email"
+SMTP_PASS="your_app_password"
+SMTP_FROM="Desired Name <your_email>"
+
+# JWT
+JWT_SECRET=this_is_a_secret_key_change_this
+JWT_EXPIRES_IN=3600
    ```
 
 3. **Prepare Docker Compose**  
@@ -91,20 +109,10 @@ You'll need Docker installed on your machine:
    ```bash
    docker compose up --build
    ```
-   The first build takes a few minutes. Wait until you see:
-   ```
-   StreamFlix API is running on: http://localhost:3000
+   The first build takes a few minutes.
    ```
 
-6. **Import sample data** (optional but recommended)
-   - Go to http://localhost:8080 (phpMyAdmin)
-   - Login with root/rootpassword
-   - Select `mydb` database
-   - Go to Import tab
-   - Choose `db-init/sample_data.sql`
-   - Click Go
-
-7. **Access the services**
+6. **Access the services**
    - **API**: http://localhost:3000
    - **phpMyAdmin**: http://localhost:8080 (login with root/rootpassword)
 
