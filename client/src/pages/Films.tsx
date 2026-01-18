@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { getMovies } from '../services/titles.api';
 import TitleCard from '../components/TitleCard';
+import { useProfile } from '../context/ProfileContext';
 
 interface Movie {
   movieId: number;
@@ -10,6 +11,7 @@ interface Movie {
 }
 
 export default function Films() {
+  const { activeProfile } = useProfile();
   const [movies, setMovies] = useState<Movie[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -46,6 +48,7 @@ export default function Films() {
             type="movie"
             classification={movie.classification?.name}
             quality="HD"
+            viewerAge={activeProfile?.age}
           />
         ))}
       </div>

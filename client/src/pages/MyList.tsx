@@ -106,6 +106,7 @@ export default function MyList() {
                   title={content.title}
                   type={isMovie ? 'movie' : 'series'}
                   classification={content.classification?.name}
+                  viewerAge={activeProfile?.age}
                 />
                 <button
                   onClick={(e) => {

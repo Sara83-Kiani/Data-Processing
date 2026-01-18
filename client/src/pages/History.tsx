@@ -121,6 +121,7 @@ export default function History() {
                   type={isMovie ? 'movie' : 'series'}
                   classification={content.classification?.name}
                   progress={item.completed ? undefined : item.resumePosition}
+                  viewerAge={activeProfile?.age}
                 />
                 <div
                   style={{
