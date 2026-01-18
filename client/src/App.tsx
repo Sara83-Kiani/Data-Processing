@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import Home from './pages/Home';
 import Films from './pages/Films';
 import Series from './pages/Series';
@@ -19,6 +19,8 @@ import { ProfileProvider } from './context/ProfileContext';
 import { AuthProvider } from './context/AuthContext';
 import AuthGuard from './components/AuthGuard';
 import ProfileGuard from './components/ProfileGuard';
+import { useAuth } from './context/AuthContext';
+import { useProfile } from './context/ProfileContext';
 
 function AppLayout() {
   const location = useLocation();
@@ -38,19 +40,30 @@ function AppLayout() {
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/profiles" element={<AuthGuard><Profiles /></AuthGuard>} />
           <Route path="/account" element={<AuthGuard><Account /></AuthGuard>} />
-          <Route path="/" element={<ProfileGuard><Home /></ProfileGuard>} />
-          <Route path="/films" element={<ProfileGuard><Films /></ProfileGuard>} />
-          <Route path="/series" element={<ProfileGuard><Series /></ProfileGuard>} />
-          <Route path="/movies/:id" element={<ProfileGuard><MovieDetails /></ProfileGuard>} />
-          <Route path="/series/:id" element={<ProfileGuard><SeriesDetails /></ProfileGuard>} />
+          <Route path="/profile" element={<AuthGuard><Account /></AuthGuard>} />
+          <Route path="/" element={<AuthGuard><ProfileGuard><Home /></ProfileGuard></AuthGuard>} />
+          <Route path="/films" element={<AuthGuard><ProfileGuard><Films /></ProfileGuard></AuthGuard>} />
+          <Route path="/series" element={<AuthGuard><ProfileGuard><Series /></ProfileGuard></AuthGuard>} />
+          <Route path="/movies/:id" element={<AuthGuard><ProfileGuard><MovieDetails /></ProfileGuard></AuthGuard>} />
+          <Route path="/series/:id" element={<AuthGuard><ProfileGuard><SeriesDetails /></ProfileGuard></AuthGuard>} />
           <Route path="/my-list" element={<AuthGuard><ProfileGuard><MyList /></ProfileGuard></AuthGuard>} />
           <Route path="/history" element={<AuthGuard><ProfileGuard><History /></ProfileGuard></AuthGuard>} />
           <Route path="/admin" element={<AuthGuard><Admin /></AuthGuard>} />
+          <Route path="*" element={<NotFoundRedirect />} />
         </Routes>
       </main>
       {!isAuthRoute && <Footer />}
     </div>
   );
+}
+
+function NotFoundRedirect() {
+  const { isAuthenticated } = useAuth();
+  const { activeProfile } = useProfile();
+
+  if (!isAuthenticated) return <Navigate to="/login" replace />;
+  if (!activeProfile) return <Navigate to="/profiles" replace />;
+  return <Navigate to="/" replace />;
 }
 
 export default function App() {
