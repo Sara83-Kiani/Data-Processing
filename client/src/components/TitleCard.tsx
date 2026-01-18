@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom';
+import { getMinimumAgeForClassificationName } from '../services/titles.api';
 
 export interface TitleCardProps {
   id: number;
@@ -8,6 +9,7 @@ export interface TitleCardProps {
   classification?: string;
   quality?: string;
   progress?: string;
+  viewerAge?: number;
 }
 
 export default function TitleCard({
@@ -18,10 +20,20 @@ export default function TitleCard({
   classification,
   quality,
   progress,
+  viewerAge,
 }: TitleCardProps) {
   const navigate = useNavigate();
 
+  const requiredAge = getMinimumAgeForClassificationName(classification);
+  const isAgeRestricted = typeof viewerAge === 'number' && viewerAge < requiredAge;
+
   const handleClick = () => {
+    if (isAgeRestricted) {
+      window.alert(
+        `This title is restricted (${classification ?? 'Unrated'}). Minimum age: ${requiredAge}.`,
+      );
+      return;
+    }
     const path = type === 'movie' ? `/movies/${id}` : `/series/${id}`;
     navigate(path);
   };
@@ -48,6 +60,25 @@ export default function TitleCard({
           position: 'relative',
         }}
       >
+        {isAgeRestricted && (
+          <div
+            style={{
+              position: 'absolute',
+              inset: 0,
+              backgroundColor: 'rgba(0,0,0,0.65)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: 12,
+              zIndex: 2,
+            }}
+          >
+            <div style={{ color: '#fff', textAlign: 'center' }}>
+              <div style={{ fontWeight: 'bold', fontSize: 12, marginBottom: 6 }}>Restricted</div>
+              <div style={{ fontSize: 12, opacity: 0.9 }}>Minimum age: {requiredAge}</div>
+            </div>
+          </div>
+        )}
         {posterUrl ? (
           <img
             src={posterUrl}

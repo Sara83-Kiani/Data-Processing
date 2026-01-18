@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { getSeries } from '../services/titles.api';
 import TitleCard from '../components/TitleCard';
+import { useProfile } from '../context/ProfileContext';
 
 interface SeriesItem {
   seriesId: number;
@@ -10,6 +11,7 @@ interface SeriesItem {
 }
 
 export default function Series() {
+  const { activeProfile } = useProfile();
   const [series, setSeries] = useState<SeriesItem[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -46,6 +48,7 @@ export default function Series() {
             type="series"
             classification={s.classification?.name}
             quality="HD"
+            viewerAge={activeProfile?.age}
           />
         ))}
       </div>

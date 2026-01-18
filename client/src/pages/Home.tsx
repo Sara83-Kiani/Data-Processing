@@ -155,6 +155,7 @@ export default function Home() {
                   type={isMovie ? 'movie' : 'series'}
                   classification={content.classification?.name}
                   progress={item.resumePosition}
+                  viewerAge={activeProfile?.age}
                 />
               );
             })}
@@ -185,6 +186,7 @@ export default function Home() {
                   title={content.title}
                   type={isMovie ? 'movie' : 'series'}
                   classification={content.classification?.name}
+                  viewerAge={activeProfile?.age}
                 />
               );
             })}
@@ -200,6 +202,7 @@ export default function Home() {
               type="movie"
               classification={movie.classification?.name}
               quality="HD"
+              viewerAge={activeProfile?.age}
             />
           ))}
         </ContentRow>
@@ -213,6 +216,7 @@ export default function Home() {
               type="series"
               classification={s.classification?.name}
               quality="HD"
+              viewerAge={activeProfile?.age}
             />
           ))}
         </ContentRow>

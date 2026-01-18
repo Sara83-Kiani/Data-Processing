@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Delete, Param, Query, Body, ParseIntPipe, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Delete, Param, Query, Body, ParseIntPipe, UseGuards, BadRequestException } from '@nestjs/common';
 import { ContentService } from './content.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CreateMovieDto } from './dto/create-movie.dto';
@@ -19,20 +19,17 @@ export class ContentController {
    */
   @Get('movies')
   async getAllMovies(@Query('minAge') minAge?: string) {
-    try {
-      const age = minAge ? parseInt(minAge) : undefined;
-      const movies = await this.contentService.getAllMovies(age);
-      return {
-        success: true,
-        data: movies,
-        count: movies.length,
-      };
-    } catch (error) {
-      return {
-        success: false,
-        error: error.message,
-      };
+    const age = minAge ? parseInt(minAge, 10) : undefined;
+    if (minAge && Number.isNaN(age)) {
+      throw new BadRequestException('minAge must be a number');
     }
+
+    const movies = await this.contentService.getAllMovies(age);
+    return {
+      success: true,
+      data: movies,
+      count: movies.length,
+    };
   }
 
   /**
@@ -41,18 +38,11 @@ export class ContentController {
    */
   @Get('movies/:id')
   async getMovieById(@Param('id', ParseIntPipe) id: number) {
-    try {
-      const movie = await this.contentService.getMovieById(id);
-      return {
-        success: true,
-        data: movie,
-      };
-    } catch (error) {
-      return {
-        success: false,
-        error: error.message,
-      };
-    }
+    const movie = await this.contentService.getMovieById(id);
+    return {
+      success: true,
+      data: movie,
+    };
   }
 
   /**
@@ -64,20 +54,21 @@ export class ContentController {
     @Query('q') query: string,
     @Query('minAge') minAge?: string,
   ) {
-    try {
-      const age = minAge ? parseInt(minAge) : undefined;
-      const movies = await this.contentService.searchMovies(query, age);
-      return {
-        success: true,
-        data: movies,
-        count: movies.length,
-      };
-    } catch (error) {
-      return {
-        success: false,
-        error: error.message,
-      };
+    if (!query || !String(query).trim()) {
+      throw new BadRequestException('q is required');
     }
+
+    const age = minAge ? parseInt(minAge, 10) : undefined;
+    if (minAge && Number.isNaN(age)) {
+      throw new BadRequestException('minAge must be a number');
+    }
+
+    const movies = await this.contentService.searchMovies(query, age);
+    return {
+      success: true,
+      data: movies,
+      count: movies.length,
+    };
   }
 
   /**
@@ -86,20 +77,17 @@ export class ContentController {
    */
   @Get('series')
   async getAllSeries(@Query('minAge') minAge?: string) {
-    try {
-      const age = minAge ? parseInt(minAge) : undefined;
-      const series = await this.contentService.getAllSeries(age);
-      return {
-        success: true,
-        data: series,
-        count: series.length,
-      };
-    } catch (error) {
-      return {
-        success: false,
-        error: error.message,
-      };
+    const age = minAge ? parseInt(minAge, 10) : undefined;
+    if (minAge && Number.isNaN(age)) {
+      throw new BadRequestException('minAge must be a number');
     }
+
+    const series = await this.contentService.getAllSeries(age);
+    return {
+      success: true,
+      data: series,
+      count: series.length,
+    };
   }
 
   /**
@@ -108,18 +96,11 @@ export class ContentController {
    */
   @Get('series/:id')
   async getSeriesById(@Param('id', ParseIntPipe) id: number) {
-    try {
-      const series = await this.contentService.getSeriesById(id);
-      return {
-        success: true,
-        data: series,
-      };
-    } catch (error) {
-      return {
-        success: false,
-        error: error.message,
-      };
-    }
+    const series = await this.contentService.getSeriesById(id);
+    return {
+      success: true,
+      data: series,
+    };
   }
 
   /**
@@ -131,23 +112,17 @@ export class ContentController {
     @Param('id', ParseIntPipe) seriesId: number,
     @Query('season') season?: string,
   ) {
-    try {
-      const seasonNumber = season ? parseInt(season) : undefined;
-      const episodes = await this.contentService.getEpisodesBySeriesId(
-        seriesId,
-        seasonNumber,
-      );
-      return {
-        success: true,
-        data: episodes,
-        count: episodes.length,
-      };
-    } catch (error) {
-      return {
-        success: false,
-        error: error.message,
-      };
+    const seasonNumber = season ? parseInt(season, 10) : undefined;
+    if (season && Number.isNaN(seasonNumber)) {
+      throw new BadRequestException('season must be a number');
     }
+
+    const episodes = await this.contentService.getEpisodesBySeriesId(seriesId, seasonNumber);
+    return {
+      success: true,
+      data: episodes,
+      count: episodes.length,
+    };
   }
 
   /**
@@ -156,18 +131,11 @@ export class ContentController {
    */
   @Get('genres')
   async getAllGenres() {
-    try {
-      const genres = await this.contentService.getAllGenres();
-      return {
-        success: true,
-        data: genres,
-      };
-    } catch (error) {
-      return {
-        success: false,
-        error: error.message,
-      };
-    }
+    const genres = await this.contentService.getAllGenres();
+    return {
+      success: true,
+      data: genres,
+    };
   }
 
   /**
@@ -176,18 +144,11 @@ export class ContentController {
    */
   @Get('classifications')
   async getAllClassifications() {
-    try {
-      const classifications = await this.contentService.getAllClassifications();
-      return {
-        success: true,
-        data: classifications,
-      };
-    } catch (error) {
-      return {
-        success: false,
-        error: error.message,
-      };
-    }
+    const classifications = await this.contentService.getAllClassifications();
+    return {
+      success: true,
+      data: classifications,
+    };
   }
 
   /**
@@ -197,18 +158,11 @@ export class ContentController {
   @Post('movies')
   @UseGuards(JwtAuthGuard)
   async createMovie(@Body() dto: CreateMovieDto) {
-    try {
-      const movie = await this.contentService.createMovie(dto);
-      return {
-        success: true,
-        data: movie,
-      };
-    } catch (error) {
-      return {
-        success: false,
-        error: error.message,
-      };
-    }
+    const movie = await this.contentService.createMovie(dto);
+    return {
+      success: true,
+      data: movie,
+    };
   }
 
   /**
@@ -218,18 +172,11 @@ export class ContentController {
   @Post('series')
   @UseGuards(JwtAuthGuard)
   async createSeries(@Body() dto: CreateSeriesDto) {
-    try {
-      const series = await this.contentService.createSeries(dto);
-      return {
-        success: true,
-        data: series,
-      };
-    } catch (error) {
-      return {
-        success: false,
-        error: error.message,
-      };
-    }
+    const series = await this.contentService.createSeries(dto);
+    return {
+      success: true,
+      data: series,
+    };
   }
 
   /**
@@ -239,18 +186,11 @@ export class ContentController {
   @Post('episodes')
   @UseGuards(JwtAuthGuard)
   async createEpisode(@Body() dto: CreateEpisodeDto) {
-    try {
-      const episode = await this.contentService.createEpisode(dto);
-      return {
-        success: true,
-        data: episode,
-      };
-    } catch (error) {
-      return {
-        success: false,
-        error: error.message,
-      };
-    }
+    const episode = await this.contentService.createEpisode(dto);
+    return {
+      success: true,
+      data: episode,
+    };
   }
 
   /**
@@ -260,18 +200,11 @@ export class ContentController {
   @Delete('movies/:id')
   @UseGuards(JwtAuthGuard)
   async deleteMovie(@Param('id', ParseIntPipe) id: number) {
-    try {
-      await this.contentService.deleteMovie(id);
-      return {
-        success: true,
-        message: 'Movie deleted',
-      };
-    } catch (error) {
-      return {
-        success: false,
-        error: error.message,
-      };
-    }
+    await this.contentService.deleteMovie(id);
+    return {
+      success: true,
+      message: 'Movie deleted',
+    };
   }
 
   /**
@@ -281,18 +214,11 @@ export class ContentController {
   @Delete('series/:id')
   @UseGuards(JwtAuthGuard)
   async deleteSeries(@Param('id', ParseIntPipe) id: number) {
-    try {
-      await this.contentService.deleteSeries(id);
-      return {
-        success: true,
-        message: 'Series deleted',
-      };
-    } catch (error) {
-      return {
-        success: false,
-        error: error.message,
-      };
-    }
+    await this.contentService.deleteSeries(id);
+    return {
+      success: true,
+      message: 'Series deleted',
+    };
   }
 
   /**
@@ -302,17 +228,10 @@ export class ContentController {
   @Delete('episodes/:id')
   @UseGuards(JwtAuthGuard)
   async deleteEpisode(@Param('id', ParseIntPipe) id: number) {
-    try {
-      await this.contentService.deleteEpisode(id);
-      return {
-        success: true,
-        message: 'Episode deleted',
-      };
-    } catch (error) {
-      return {
-        success: false,
-        error: error.message,
-      };
-    }
+    await this.contentService.deleteEpisode(id);
+    return {
+      success: true,
+      message: 'Episode deleted',
+    };
   }
 }

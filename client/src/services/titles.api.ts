@@ -9,6 +9,25 @@ export interface Title {
   description?: string;
 }
 
+export function getMinimumAgeForClassificationName(name?: string | null): number {
+  const ageMap: Record<string, number> = {
+    G: 0,
+    PG: 8,
+    'PG-13': 13,
+    R: 17,
+    'NC-17': 18,
+    'TV-Y': 0,
+    'TV-Y7': 7,
+    'TV-G': 0,
+    'TV-PG': 8,
+    'TV-14': 14,
+    'TV-MA': 18,
+  };
+
+  if (!name) return 0;
+  return ageMap[name] ?? 0;
+}
+
 export interface MovieDetail {
   movieId: number;
   title: string;
@@ -36,12 +55,14 @@ export interface SeriesDetail {
   episodes: Episode[];
 }
 
-export function getMovies(): Promise<Title[]> {
-  return apiFetch<Title[]>('/content/movies');
+export function getMovies(minAge?: number): Promise<Title[]> {
+  const query = typeof minAge === 'number' ? `?minAge=${encodeURIComponent(String(minAge))}` : '';
+  return apiFetch<Title[]>(`/content/movies${query}`);
 }
 
-export function getSeries(): Promise<Title[]> {
-  return apiFetch<Title[]>('/content/series');
+export function getSeries(minAge?: number): Promise<Title[]> {
+  const query = typeof minAge === 'number' ? `?minAge=${encodeURIComponent(String(minAge))}` : '';
+  return apiFetch<Title[]>(`/content/series${query}`);
 }
 
 export function getMovieById(id: number): Promise<MovieDetail> {

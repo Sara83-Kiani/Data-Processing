@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getSeriesById, type SeriesDetail, type Episode } from '../services/titles.api';
+import { getSeriesById, getMinimumAgeForClassificationName, type SeriesDetail, type Episode } from '../services/titles.api';
 import { addOrUpdateHistory, getHistory, type HistoryItem } from '../services/history.api';
 import { useProfile } from '../context/ProfileContext';
 import WatchlistButton from '../components/WatchlistButton';
@@ -16,6 +16,10 @@ export default function SeriesDetails() {
   const [selectedSeason, setSelectedSeason] = useState(1);
   const [episodeHistory, setEpisodeHistory] = useState<Map<number, HistoryItem>>(new Map());
   const [actionLoading, setActionLoading] = useState<number | null>(null);
+
+  const requiredAge = getMinimumAgeForClassificationName(series?.classification?.name);
+  const isAgeRestricted =
+    typeof activeProfile?.age === 'number' && activeProfile.age < requiredAge;
 
   useEffect(() => {
     if (!id) return;
@@ -49,7 +53,7 @@ export default function SeriesDetails() {
   }, [activeProfile, series]);
 
   const handleStartEpisode = async (episodeId: number) => {
-    if (!activeProfile) return;
+    if (!activeProfile || isAgeRestricted) return;
     setActionLoading(episodeId);
     try {
       const entry = await addOrUpdateHistory(activeProfile.profileId, {
@@ -65,7 +69,7 @@ export default function SeriesDetails() {
   };
 
   const handleFinishEpisode = async (episodeId: number) => {
-    if (!activeProfile) return;
+    if (!activeProfile || isAgeRestricted) return;
     setActionLoading(episodeId);
     try {
       const entry = await addOrUpdateHistory(activeProfile.profileId, {
@@ -126,6 +130,20 @@ export default function SeriesDetails() {
       </button>
 
       <div style={{ maxWidth: 800 }}>
+        {isAgeRestricted && (
+          <div
+            style={{
+              backgroundColor: '#3a1b1b',
+              border: '1px solid #7f1d1d',
+              color: '#fecaca',
+              padding: '12px 14px',
+              borderRadius: 8,
+              marginBottom: 16,
+            }}
+          >
+            This title is restricted for this profile. Minimum age: {requiredAge}. Current age: {activeProfile?.age}.
+          </div>
+        )}
         <h1 style={{ color: '#fff', fontSize: 32, marginBottom: 8 }}>{series.title}</h1>
 
         <div style={{ display: 'flex', gap: 16, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center' }}>
@@ -204,7 +222,7 @@ export default function SeriesDetails() {
                       {!historyEntry ? (
                         <button
                           onClick={() => handleStartEpisode(ep.episodeId)}
-                          disabled={isLoading}
+                          disabled={isLoading || isAgeRestricted}
                           style={{
                             backgroundColor: '#46d369',
                             color: '#fff',
@@ -213,16 +231,16 @@ export default function SeriesDetails() {
                             borderRadius: 4,
                             fontSize: 12,
                             fontWeight: 'bold',
-                            cursor: isLoading ? 'not-allowed' : 'pointer',
+                            cursor: isLoading || isAgeRestricted ? 'not-allowed' : 'pointer',
                             opacity: isLoading ? 0.7 : 1,
                           }}
                         >
-                          {isLoading ? '...' : '▶ Start'}
+                          {isAgeRestricted ? 'Restricted' : isLoading ? '...' : '▶ Start'}
                         </button>
                       ) : !historyEntry.completed ? (
                         <button
                           onClick={() => handleFinishEpisode(ep.episodeId)}
-                          disabled={isLoading}
+                          disabled={isLoading || isAgeRestricted}
                           style={{
                             backgroundColor: '#2196f3',
                             color: '#fff',
@@ -231,11 +249,11 @@ export default function SeriesDetails() {
                             borderRadius: 4,
                             fontSize: 12,
                             fontWeight: 'bold',
-                            cursor: isLoading ? 'not-allowed' : 'pointer',
+                            cursor: isLoading || isAgeRestricted ? 'not-allowed' : 'pointer',
                             opacity: isLoading ? 0.7 : 1,
                           }}
                         >
-                          {isLoading ? '...' : '✓ Finish'}
+                          {isAgeRestricted ? 'Restricted' : isLoading ? '...' : '✓ Finish'}
                         </button>
                       ) : (
                         <span

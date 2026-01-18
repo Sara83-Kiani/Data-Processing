@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getMovieById, type MovieDetail } from '../services/titles.api';
+import { getMovieById, getMinimumAgeForClassificationName, type MovieDetail } from '../services/titles.api';
 import { addOrUpdateHistory, getHistory, type HistoryItem } from '../services/history.api';
 import { useProfile } from '../context/ProfileContext';
 import WatchlistButton from '../components/WatchlistButton';
@@ -15,6 +15,10 @@ export default function MovieDetails() {
   const [error, setError] = useState<string | null>(null);
   const [historyEntry, setHistoryEntry] = useState<HistoryItem | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
+
+  const requiredAge = getMinimumAgeForClassificationName(movie?.classification?.name);
+  const isAgeRestricted =
+    typeof activeProfile?.age === 'number' && activeProfile.age < requiredAge;
 
   useEffect(() => {
     if (!id) return;
@@ -42,7 +46,7 @@ export default function MovieDetails() {
   }, [activeProfile, id]);
 
   const handleStartWatching = async () => {
-    if (!activeProfile || !movie) return;
+    if (!activeProfile || !movie || isAgeRestricted) return;
     setActionLoading(true);
     try {
       const entry = await addOrUpdateHistory(activeProfile.profileId, {
@@ -58,7 +62,7 @@ export default function MovieDetails() {
   };
 
   const handleMarkFinished = async () => {
-    if (!activeProfile || !movie) return;
+    if (!activeProfile || !movie || isAgeRestricted) return;
     setActionLoading(true);
     try {
       const entry = await addOrUpdateHistory(activeProfile.profileId, {
@@ -110,6 +114,20 @@ export default function MovieDetails() {
       </button>
 
       <div style={{ maxWidth: 800 }}>
+        {isAgeRestricted && (
+          <div
+            style={{
+              backgroundColor: '#3a1b1b',
+              border: '1px solid #7f1d1d',
+              color: '#fecaca',
+              padding: '12px 14px',
+              borderRadius: 8,
+              marginBottom: 16,
+            }}
+          >
+            This title is restricted for this profile. Minimum age: {requiredAge}. Current age: {activeProfile?.age}.
+          </div>
+        )}
         <h1 style={{ color: '#fff', fontSize: 32, marginBottom: 8 }}>{movie.title}</h1>
 
         <div style={{ display: 'flex', gap: 16, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center' }}>
@@ -139,7 +157,7 @@ export default function MovieDetails() {
           {!historyEntry ? (
             <button
               onClick={handleStartWatching}
-              disabled={actionLoading}
+              disabled={actionLoading || isAgeRestricted}
               style={{
                 backgroundColor: '#46d369',
                 color: '#fff',
@@ -148,16 +166,16 @@ export default function MovieDetails() {
                 borderRadius: 4,
                 fontSize: 14,
                 fontWeight: 'bold',
-                cursor: actionLoading ? 'not-allowed' : 'pointer',
+                cursor: actionLoading || isAgeRestricted ? 'not-allowed' : 'pointer',
                 opacity: actionLoading ? 0.7 : 1,
               }}
             >
-              {actionLoading ? 'Starting...' : '▶ Start Watching'}
+              {isAgeRestricted ? 'Restricted' : actionLoading ? 'Starting...' : '▶ Start Watching'}
             </button>
           ) : !historyEntry.completed ? (
             <button
               onClick={handleMarkFinished}
-              disabled={actionLoading}
+              disabled={actionLoading || isAgeRestricted}
               style={{
                 backgroundColor: '#2196f3',
                 color: '#fff',
@@ -166,11 +184,11 @@ export default function MovieDetails() {
                 borderRadius: 4,
                 fontSize: 14,
                 fontWeight: 'bold',
-                cursor: actionLoading ? 'not-allowed' : 'pointer',
+                cursor: actionLoading || isAgeRestricted ? 'not-allowed' : 'pointer',
                 opacity: actionLoading ? 0.7 : 1,
               }}
             >
-              {actionLoading ? 'Updating...' : '✓ Mark as Finished'}
+              {isAgeRestricted ? 'Restricted' : actionLoading ? 'Updating...' : '✓ Mark as Finished'}
             </button>
           ) : (
             <span
