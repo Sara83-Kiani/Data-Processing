@@ -245,7 +245,7 @@ Re-import `sample_data.sql` - it will clear existing data and insert fresh sampl
 
 ## Documentation
 
-- [Backup & Recovery Guide](docs/backup-recovery.md) - How to create and restore database backups
+- [Backup & Recovery Guide](backup-recovery.md) - How to create and restore database backups
 
 ---
 
