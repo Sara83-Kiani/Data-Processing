@@ -22,7 +22,6 @@ export class ProfilesService {
     const p = this.profileRepo.create({
       accountId,
       name: dto.name,
-      image: 'placeholder.jpeg',
       age: dto.age ?? 18,
       language: dto.language ?? 'ENGLISH',
     });
