@@ -8,9 +8,11 @@ import { Episode } from './entities/episode.entity';
 import { Genre } from './entities/genre.entity';
 import { Classification } from './entities/classification.entity';
 import { Subtitle } from './entities/subtitle.entity';
+import { AuthModule } from '../auth/auth.module';
 
 @Module({
   imports: [
+    AuthModule,
     TypeOrmModule.forFeature([
       Movie,
       Series,
