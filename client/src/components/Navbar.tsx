@@ -67,22 +67,16 @@ export default function Navbar() {
             padding: 8,
           }}
         >
-          <div
+          <img
+            src={currentProfile?.image || '/avatars/avatar-1.svg'}
+            alt=""
             style={{
               width: 32,
               height: 32,
               borderRadius: 4,
-              backgroundColor: currentColor,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: '#fff',
-              fontWeight: 'bold',
-              fontSize: 14,
+              objectFit: 'cover',
             }}
-          >
-            {currentProfile?.name[0] || '?'}
-          </div>
+          />
           <span style={{ color: '#fff', fontSize: 12 }}>▼</span>
         </button>
 
@@ -119,22 +113,16 @@ export default function Navbar() {
                 onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#333')}
                 onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = currentProfile?.profileId === profile.profileId ? '#333' : 'transparent')}
               >
-                <div
+                <img
+                  src={profile.image}
+                  alt=""
                   style={{
                     width: 28,
                     height: 28,
                     borderRadius: 4,
-                    backgroundColor: getProfileColor(profile.profileId),
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: '#fff',
-                    fontWeight: 'bold',
-                    fontSize: 12,
+                    objectFit: 'cover',
                   }}
-                >
-                  {profile.name[0]}
-                </div>
+                />
                 <span style={{ color: '#fff', fontSize: 14 }}>{profile.name}</span>
                 {currentProfile?.profileId === profile.profileId && (
                   <span style={{ color: '#46d369', marginLeft: 'auto' }}>✓</span>

@@ -57,8 +57,7 @@ INSERT INTO Classification (name, description) VALUES
 INSERT INTO Subscription (description, price, quality, status) VALUES
 ('Basic SD - Standard Definition streaming', 7.99, 'SD', 'ACTIVE'),
 ('Standard HD - High Definition streaming', 12.99, 'HD', 'ACTIVE'),
-('Premium UHD - Ultra HD streaming', 17.99, 'UHD', 'ACTIVE'),
-('Family Plan - Premium for whole family', 19.99, 'UHD', 'ACTIVE');
+('Premium UHD - Ultra HD streaming', 17.99, 'UHD', 'ACTIVE');
 
 -- Accounts (password: Test123456 - bcrypt hashed)
 INSERT INTO Account (email, password, is_activated, subscription_id, referral_code, is_blocked) VALUES

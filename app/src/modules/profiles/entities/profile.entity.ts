@@ -24,9 +24,6 @@ export class Profile {
   @Column({ name: 'name', type: 'varchar', length: 60 })
   name: string;
 
-  @Column({ name: 'image', type: 'varchar', length: 255, default: 'placeholder.jpeg' })
-  image: string;
-
   @Column({ name: 'age', type: 'int', default: 18 })
   age: number;
 

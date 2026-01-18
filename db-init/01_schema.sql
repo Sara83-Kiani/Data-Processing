@@ -61,7 +61,6 @@ CREATE TABLE IF NOT EXISTS `Profile` (
     profile_id INT(11) AUTO_INCREMENT,
     account_id INT(11) NOT NULL,
     name VARCHAR(60) NOT NULL,
-    image VARCHAR(255) NOT NULL DEFAULT 'placeholder.jpeg',
     age INT(11) DEFAULT 18,
     language  ENUM('ENGLISH', 'DUTCH') NOT NULL DEFAULT 'ENGLISH',
     PRIMARY KEY(profile_id),

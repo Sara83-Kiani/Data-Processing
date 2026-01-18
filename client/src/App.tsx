@@ -24,10 +24,12 @@ function AppLayout() {
   const location = useLocation();
   const authRoutes = ['/login', '/register', '/forgot-password', '/reset-password'];
   const isAuthRoute = authRoutes.some(route => location.pathname.startsWith(route));
+  const isProfilesRoute = location.pathname === '/profiles';
+  const hideNavbar = isAuthRoute || isProfilesRoute;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-      {!isAuthRoute && <Navbar />}
+      {!hideNavbar && <Navbar />}
       <main style={{ flex: 1 }}>
         <Routes>
           <Route path="/login" element={<Login />} />
