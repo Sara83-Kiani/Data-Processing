@@ -1,7 +1,12 @@
 # StreamFlix API - Year 2 Period 2
 
 ## Project Overview
-StreamFlix is a Netflix-like streaming service API built with NestJS, TypeORM, and MySQL. This project implements a complete backend system for managing user accounts, profiles, subscriptions, content (movies and series), watchlists, and viewing history.
+StreamFlix is a Netflix-like streaming service built as a Docker Compose project.
+
+This repository contains:
+- A **NestJS + TypeORM + MySQL API** in `app/`
+- A **React (Vite) client** in `client/`
+- **MySQL initialization scripts** in `db-init/` that create schema and load mock data
 
 ### Group Members
 * Beyza Ölmez - beyza.olmez@student.nhlstenden.com
@@ -66,7 +71,7 @@ You'll need Docker installed on your machine:
 1. **Clone or download the project** to your local machine
 
 2. **Create the environment file**  
-   Rename `.env.TEMPLATE` to `.env` and configure your database settings:
+   Copy `.env.TEMPLATE` to `.env` and configure your settings:
    ```env
 # Specific project name
 COMPOSE_PROJECT_NAME="your_project_name"
@@ -96,25 +101,22 @@ SMTP_FROM="Desired Name <your_email>"
 # JWT
 JWT_SECRET=this_is_a_secret_key_change_this
 JWT_EXPIRES_IN=3600
+
+FRONTEND_URL=http://localhost:5173
+VITE_API_BASE_URL=http://localhost:3000
    ```
 
-3. **Prepare Docker Compose**  
-   Rename `docker-compose.yamlTEMPLATE` to `docker-compose.yaml`
-
-4. **Create MySQL data folder**  
-   Create an empty folder called `mysqldata` in the project root (this stores your database)
-
-5. **Start the application**  
+3. **Start the application**  
    Open your terminal in the project folder and run:
    ```bash
    docker compose up --build
    ```
    The first build takes a few minutes.
-   ```
 
-6. **Access the services**
+4. **Access the services**
+   - **Client**: http://localhost:5173
    - **API**: http://localhost:3000
-   - **phpMyAdmin**: http://localhost:8080 (login with root/rootpassword)
+   - **phpMyAdmin**: http://localhost:8080 (server: `mysql`, username: `root`, password: `DB_ROOT_PASSWORD` from `.env`)
 
 ---
 
@@ -176,25 +178,24 @@ Download [Postman](https://www.postman.com/downloads/) for a better testing expe
 
 ```
 Data-Processing/
-├── app/                          # NestJS application
+├── app/                          # NestJS API (TypeScript)
 │   ├── src/
-│   │   ├── common/              # Shared utilities and base classes
-│   │   ├── config/              # Configuration files (database, etc.)
-│   │   ├── modules/
-│   │   │   ├── auth/           # Authentication (register, login)
-│   │   │   ├── accounts/       # Account management
-│   │   │   ├── profiles/       # Profile management
-│   │   │   ├── content/        # Movies, series, episodes
-│   │   │   └── invitations/    # Referral system
-│   │   ├── app.module.ts       # Main application module
-│   │   └── main.ts             # Application entry point
-│   ├── package.json            # Dependencies
-│   └── Dockerfile              # Docker configuration for API
-├── db-init/
-│   └── streamflix.sql          # Database schema
-├── docker-compose.yaml         # Docker services configuration
-├── .env                        # Environment variables
-└── README.md                   # This file
+│   │   ├── common/               # Shared utilities
+│   │   ├── config/               # Configuration
+│   │   └── modules/              # Feature modules (auth, content, watchlist, ...)
+│   ├── package.json
+│   └── Dockerfile
+├── client/                       # React (Vite) client
+│   ├── src/
+│   ├── package.json
+│   └── Dockerfile
+├── db-init/                      # MySQL init scripts (run on first DB start)
+│   ├── 01_schema.sql
+│   ├── 02_mockdata.sql
+│   └── 03_roles.sql
+├── docker-compose.yaml           # Local dev stack (API + DB + client + phpMyAdmin)
+├── .env.TEMPLATE                 # Env template (copy to .env)
+└── README.md
 ```
 
 ---
@@ -244,15 +245,18 @@ If port 3000 or 3306 is taken, modify the ports in `docker-compose.yaml`
 Make sure you've selected the correct database (`mydb`) in phpMyAdmin before importing
 
 **API returns empty arrays?**  
-Import the sample data: In phpMyAdmin, select `mydb` database, go to Import tab, and import `db-init/sample_data.sql`
+The database is initialized automatically from `db-init/` when the MySQL container starts for the first time.
 
 **Want to reset the database?**  
-Re-import `sample_data.sql` - it will clear existing data and insert fresh sample data
+Stop containers and remove volumes, then start again:
+`docker compose down -v` then `docker compose up --build`
 
 ---
 
 ## Documentation
 
+- [Setup Guide](SETUP_GUIDE.md)
+- [XML Response Testing Guide](XML_TESTING.md)
 - [Backup & Recovery Guide](backup-recovery.md) - How to create and restore database backups
 
 ---
