@@ -1,99 +1,33 @@
-import { Controller, Post, Body, HttpCode, HttpStatus } from '@nestjs/common';
+import { Body, Controller, Get, Post, Query, Res } from '@nestjs/common';
+import type { Response } from 'express';
+
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
-import { ForgotPasswordDto } from './dto/forgot-password.dto';
-import { ResetPasswordDto } from './dto/reset-password.dto';
 
-/**
- * Authentication Controller
- * Handles HTTP requests for authentication endpoints
- */
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
-  /**
-   * Register a new user account
-   * POST /auth/register
-   */
+  // POST /auth/register
   @Post('register')
-  @HttpCode(HttpStatus.CREATED)
-  async register(@Body() registerDto: RegisterDto) {
-    try {
-      const result = await this.authService.register(registerDto);
-      return {
-        success: true,
-        data: result,
-      };
-    } catch (error) {
-      return {
-        success: false,
-        error: error.message,
-      };
-    }
+  register(@Body() dto: RegisterDto) {
+    return this.authService.register(dto);
   }
 
-  /**
-   * Login user and get JWT token
-   * POST /auth/login
-   */
+  // POST /auth/login
   @Post('login')
-  @HttpCode(HttpStatus.OK)
-  async login(@Body() loginDto: LoginDto) {
-    try {
-      const result = await this.authService.login(loginDto);
-      return {
-        success: true,
-        data: result,
-      };
-    } catch (error) {
-      return {
-        success: false,
-        error: error.message,
-      };
-    }
+  login(@Body() dto: LoginDto) {
+    return this.authService.login(dto);
   }
 
-  /**
-   * Request password reset link
-   * POST /auth/forgot-password
-   */
-  @Post('forgot-password')
-  @HttpCode(HttpStatus.OK)
-  async forgotPassword(@Body() forgotPasswordDto: ForgotPasswordDto) {
-    try {
-      const result = await this.authService.forgotPassword(forgotPasswordDto);
-      return {
-        success: true,
-        data: result,
-      };
-    } catch (error) {
-      return {
-        success: false,
-        error: error.message,
-      };
-    }
-  }
+  // GET /auth/activate?token=...
+  // Called when user clicks verification link in email.
+  @Get('activate')
+  async activate(@Query('token') token: string, @Res() res: Response) {
+    await this.authService.activateAccount(token);
 
-  /**
-   * Reset password using token
-   * POST /auth/reset-password
-   */
-  @Post('reset-password')
-  @HttpCode(HttpStatus.OK)
-  async resetPassword(@Body() resetPasswordDto: ResetPasswordDto) {
-    try {
-      const result = await this.authService.resetPassword(resetPasswordDto);
-      return {
-        success: true,
-        data: result,
-      };
-    } catch (error) {
-      return {
-        success: false,
-        error: error.message,
-      };
-    }
+    // Redirect to frontend login page with query param that triggers popup
+    return res.redirect(this.authService.getActivatedRedirectUrl());
   }
 }

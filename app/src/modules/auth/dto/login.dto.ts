@@ -1,14 +1,11 @@
-import { IsEmail, IsNotEmpty, IsString } from 'class-validator';
+import { IsEmail, IsString, MinLength, MaxLength } from 'class-validator';
 
-/**
- * Data Transfer Object for user login
- */
 export class LoginDto {
-  @IsEmail({}, { message: 'Please provide a valid email address' })
-  @IsNotEmpty({ message: 'Email is required' })
+  @IsEmail()
   email: string;
 
   @IsString()
-  @IsNotEmpty({ message: 'Password is required' })
+  @MinLength(1)
+  @MaxLength(64)
   password: string;
 }

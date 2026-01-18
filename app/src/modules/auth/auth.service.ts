@@ -1,235 +1,240 @@
-import { Injectable, UnauthorizedException, BadRequestException, ConflictException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  HttpException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
 import { JwtService } from '@nestjs/jwt';
+import { Repository } from 'typeorm';
+
 import * as bcrypt from 'bcrypt';
-import { v4 as uuidv4 } from 'uuid';
-import { Account } from '../accounts/entities/account.entity';
-import { PasswordReset } from './entities/password-reset.entity';
+import { randomUUID } from 'crypto';
+
+import * as nodemailer from 'nodemailer';
+
+import { Account } from '../accounts/accounts.entity';
+import { ActivationToken } from './activation-token.entity';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
-import { ForgotPasswordDto } from './dto/forgot-password.dto';
-import { ResetPasswordDto } from './dto/reset-password.dto';
 
-/**
- * Authentication Service
- * Handles user registration, login, and token management
- */
 @Injectable()
 export class AuthService {
   constructor(
     @InjectRepository(Account)
-    private readonly accountRepository: Repository<Account>,
-    @InjectRepository(PasswordReset)
-    private readonly passwordResetRepository: Repository<PasswordReset>,
+    private readonly accountRepo: Repository<Account>,
+
+    @InjectRepository(ActivationToken)
+    private readonly activationRepo: Repository<ActivationToken>,
+
     private readonly jwtService: JwtService,
   ) {}
 
-  /**
-   * Register a new user account
-   */
-  async register(registerDto: RegisterDto): Promise<{ message: string; accountId: number }> {
-    const { email, password } = registerDto;
+  // ===== Helpers for config values (with safe defaults) =====
+
+  private frontendUrl(): string {
+    // Where your React app runs (used for redirect to login page)
+    return process.env.FRONTEND_URL ?? 'http://localhost:5173';
+  }
+
+  private apiBaseUrl(): string {
+    // Where your Nest API runs (used in activation link)
+    return process.env.API_BASE_URL ?? 'http://localhost:3000';
+  }
+
+  private lockMinutes(): number {
+    // After 3 failed logins, lock account temporarily for this many minutes
+    const n = Number(process.env.AUTH_LOCK_MINUTES ?? 15);
+    return Number.isFinite(n) && n > 0 ? n : 15;
+  }
+
+  private activationTtlHours(): number {
+    // Activation link expires after this many hours
+    const n = Number(process.env.ACTIVATION_TOKEN_TTL_HOURS ?? 24);
+    return Number.isFinite(n) && n > 0 ? n : 24;
+  }
+
+private async sendActivationEmail(email: string, token: string): Promise<void> {
+  const activationLink =
+    `${this.apiBaseUrl()}/auth/activate?token=${encodeURIComponent(token)}`;
+
+  const host = process.env.SMTP_HOST;
+  const user = process.env.SMTP_USER;
+  const pass = process.env.SMTP_PASS;
+  const port = Number(process.env.SMTP_PORT ?? 587);
+  const from = process.env.SMTP_FROM ?? user ?? 'no-reply@streamflix.local';
+
+  if (!host || !user || !pass) {
+    // eslint-disable-next-line no-console
+    console.log(`[DEV] Activation link for ${email}: ${activationLink}`);
+    return;
+  }
+
+  const transporter = nodemailer.createTransport({
+    host,
+    port,
+    secure: port === 465, // 465 = SSL, 587 = STARTTLS
+    auth: { user, pass },
+    requireTLS: port === 587,
+  });
+
+  try {
+    await transporter.sendMail({
+      from,
+      to: email,
+      subject: 'Verify your account',
+      text:
+        `Welcome!\n\n` +
+        `Click this link to activate your account:\n${activationLink}\n\n` +
+        `This link expires in ${this.activationTtlHours()} hours.`,
+      html: `
+        <p>Welcome!</p>
+        <p>Click this link to activate your account:</p>
+        <p><a href="${activationLink}">Activate account</a></p>
+        <p>This link expires in ${this.activationTtlHours()} hours.</p>
+      `,
+    });
+
+  } catch (err) {
+    //log the activation link for manual activation incase mail fails.
+    // eslint-disable-next-line no-console
+    console.error('[MAIL] Failed to send activation email:', err);
+    // eslint-disable-next-line no-console
+    console.log(`[DEV] Activation link for ${email}: ${activationLink}`);
+  }
+}
+
+
+  // REGISTER
+
+  async register(dto: RegisterDto): Promise<{ message: string }> {
+    const email = dto.email.trim().toLowerCase();
 
     // Check if email already exists
-    const existingAccount = await this.accountRepository.findOne({ where: { email } });
-    if (existingAccount) {
-      throw new ConflictException('Email already registered');
+    const exists = await this.accountRepo.findOne({ where: { email } });
+    if (exists) {
+      throw new BadRequestException('Email is already registered.');
     }
 
-    // Hash password
-    const hashedPassword = await this.hashPassword(password);
+    // Hash password (bcrypt -> 60 chars, matches VARCHAR(60))
+    const passwordHash = await bcrypt.hash(dto.password, 10);
 
-    // Generate unique referral code
-    const referralCode = this.generateReferralCode();
-
-    // Create new account
-    const account = this.accountRepository.create({
-      email,
-      password: hashedPassword,
-      referralCode,
-      isActivated: false,
-    });
-
-    const savedAccount = await this.accountRepository.save(account);
-
-    // TODO: Send activation email with token
-    // For now, we'll auto-activate for testing
-    savedAccount.isActivated = true;
-    await this.accountRepository.save(savedAccount);
-
-    return {
-      message: 'Account created successfully. Please check your email for activation link.',
-      accountId: savedAccount.accountId,
-    };
-  }
-
-  /**
-   * Login user and return JWT token
-   */
-  async login(loginDto: LoginDto): Promise<{ accessToken: string; account: any }> {
-    const { email, password } = loginDto;
-
-    // Find account by email
-    const account = await this.accountRepository.findOne({ 
-      where: { email },
-      relations: ['profiles'],
-    });
-
-    if (!account) {
-      throw new UnauthorizedException('Invalid credentials');
-    }
-
-    // Check if account is locked
-    if (account.isLocked()) {
-      throw new UnauthorizedException('Account is temporarily locked. Please try again later.');
-    }
-
-    // Check if account is activated
-    if (!account.isActivated) {
-      throw new UnauthorizedException('Please activate your account first');
-    }
-
-    // Verify password
-    const isPasswordValid = await this.verifyPassword(password, account['password']);
-    
-    if (!isPasswordValid) {
-      // Increment failed attempts
-      account.incrementFailedAttempts();
-      await this.accountRepository.save(account);
-      
-      throw new UnauthorizedException('Invalid credentials');
-    }
-
-    // Reset failed attempts on successful login
-    account.resetFailedAttempts();
-    await this.accountRepository.save(account);
-
-    // Generate JWT token
-    const payload = { 
-      sub: account.accountId, 
-      email: account.email,
-    };
-    const accessToken = this.jwtService.sign(payload);
-
-    return {
-      accessToken,
-      account: account.toJSON(),
-    };
-  }
-
-  /**
-   * Hash password using bcrypt
-   */
-  private async hashPassword(password: string): Promise<string> {
-    const saltRounds = 10;
-    return bcrypt.hash(password, saltRounds);
-  }
-
-  /**
-   * Verify password against hash
-   */
-  private async verifyPassword(password: string, hash: string): Promise<boolean> {
-    return bcrypt.compare(password, hash);
-  }
-
-  /**
-   * Generate unique referral code
-   */
-  private generateReferralCode(): string {
-    return `REF-${uuidv4().substring(0, 8).toUpperCase()}`;
-  }
-
-  /**
-   * Request password reset - sends reset link via email
-   * Per use case: "If a user has forgotten their password, a recovery request 
-   * can be submitted, after which a new verification link will be sent."
-   */
-  async forgotPassword(forgotPasswordDto: ForgotPasswordDto): Promise<{ message: string }> {
-    const { email } = forgotPasswordDto;
-
-    // Find account by email
-    const account = await this.accountRepository.findOne({ where: { email: email.toLowerCase() } });
-
-    // Always return success message to prevent email enumeration attacks
-    if (!account) {
-      return { message: 'If an account with that email exists, a password reset link has been sent.' };
-    }
-
-    // Generate reset token
-    const token = uuidv4();
-    const expiresAt = new Date();
-    expiresAt.setHours(expiresAt.getHours() + 1); // Token valid for 1 hour
-
-    // Invalidate any existing reset tokens for this account
-    await this.passwordResetRepository.update(
-      { accountId: account.accountId, isUsed: false },
-      { isUsed: true }
+    // Create account (not activated yet)
+    const account = await this.accountRepo.save(
+      this.accountRepo.create({
+        email,
+        password: passwordHash,
+        isActivated: false,
+        isBlocked: false,
+        failedLoginAttempts: 0,
+        lockedUntil: null,
+      }),
     );
 
-    // Create new password reset token
-    const passwordReset = this.passwordResetRepository.create({
-      accountId: account.accountId,
-      token,
-      expiresAt,
-      isUsed: false,
-    });
-    await this.passwordResetRepository.save(passwordReset);
+    // Create activation token row
+    const token = randomUUID();
+    const expiresAt = new Date(Date.now() + this.activationTtlHours() * 60 * 60 * 1000);
 
-    // Build reset link
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-    const resetLink = `${frontendUrl}/reset-password?token=${token}`;
+    await this.activationRepo.save(
+      this.activationRepo.create({
+        account,
+        token,
+        expiresAt,
+      }),
+    );
 
-    // Log the reset link (in production, this would send an email)
-    console.log(`[PASSWORD RESET] Reset link for ${email}: ${resetLink}`);
+    // "Send" email (currently logs activation link to console)
+    await this.sendActivationEmail(email, token);
 
-    // TODO: Send actual email in production
-    // await this.sendPasswordResetEmail(email, resetLink);
-
-    return { message: 'If an account with that email exists, a password reset link has been sent.' };
+    return {
+      message:
+        'Registration successful. Please verify your account (dev: check API console for activation link).',
+    };
   }
 
-  /**
-   * Reset password using token
-   */
-  async resetPassword(resetPasswordDto: ResetPasswordDto): Promise<{ message: string }> {
-    const { token, newPassword } = resetPasswordDto;
 
-    // Find the password reset token
-    const passwordReset = await this.passwordResetRepository.findOne({
+  // ACTIVATE ACCOUNT
+  async activateAccount(token: string): Promise<void> {
+    if (!token) throw new BadRequestException('Missing activation token.');
+
+    // Find activation token row + load related account
+    const row = await this.activationRepo.findOne({
       where: { token },
       relations: ['account'],
     });
 
-    if (!passwordReset) {
-      throw new BadRequestException('Invalid or expired reset token');
+    if (!row) throw new BadRequestException('Invalid activation token.');
+    if (row.expiresAt.getTime() < Date.now()) {
+      throw new BadRequestException('Activation token expired.');
     }
 
-    // Check if token is valid
-    if (!passwordReset.isValid()) {
-      throw new BadRequestException('Invalid or expired reset token');
+    // Mark account activated
+    row.account.isActivated = true;
+    await this.accountRepo.save(row.account);
+
+    // Optional cleanup: delete token after use
+    await this.activationRepo.delete({ token });
+  }
+
+  // LOGIN + TEMP LOCK AFTER 3 FAILS
+  async login(dto: LoginDto): Promise<{ accessToken: string }> {
+    const email = dto.email.trim().toLowerCase();
+
+    const account = await this.accountRepo.findOne({ where: { email } });
+
+    // Don't reveal which part was wrong (email vs password)
+    if (!account) throw new UnauthorizedException('Invalid email or password.');
+
+    // Permanent block (admin / system)
+    if (account.isBlocked) throw new ForbiddenException('This account is blocked.');
+
+    // Must verify email first
+    if (!account.isActivated) {
+      throw new ForbiddenException('Please verify your email before logging in.');
     }
 
-    // Hash new password
-    const hashedPassword = await this.hashPassword(newPassword);
+    // Temporary lock check
+    if (account.lockedUntil && account.lockedUntil.getTime() > Date.now()) {
+      // 423 Locked = try later
+      throw new HttpException('Too many failed attempts. Try again later.', 423);
+    }
 
-    // Update account password using raw query (password is private field)
-    await this.accountRepository
-      .createQueryBuilder()
-      .update()
-      .set({ 
-        password: hashedPassword,
-        failedLoginAttempts: 0,
-        lockedUntil: null,
-        isBlocked: false,
-      } as any)
-      .where('account_id = :id', { id: passwordReset.accountId })
-      .execute();
+    // Compare password
+    const ok = await bcrypt.compare(dto.password, account.password);
 
-    // Mark token as used
-    passwordReset.isUsed = true;
-    await this.passwordResetRepository.save(passwordReset);
+    if (!ok) {
+      // Increase failed attempts counter
+      account.failedLoginAttempts = (account.failedLoginAttempts ?? 0) + 1;
 
-    return { message: 'Password has been reset successfully. You can now log in with your new password.' };
+      // Lock after 3 wrong attempts
+      if (account.failedLoginAttempts >= 3) {
+        account.lockedUntil = new Date(Date.now() + this.lockMinutes() * 60 * 1000);
+
+        // Reset counter after lock
+        account.failedLoginAttempts = 0;
+      }
+
+      await this.accountRepo.save(account);
+      throw new UnauthorizedException('Invalid email or password.');
+    }
+
+    // Successful login: reset counters/lock
+    account.failedLoginAttempts = 0;
+    account.lockedUntil = null;
+    await this.accountRepo.save(account);
+
+    // Create JWT token
+    const accessToken = await this.jwtService.signAsync({
+      sub: account.id,
+      email: account.email,
+    });
+
+    return { accessToken };
+  }
+
+  // redirect user to frontend login.
+  getActivatedRedirectUrl(): string {
+    return `${this.frontendUrl()}/login?activated=1`;
   }
 }
