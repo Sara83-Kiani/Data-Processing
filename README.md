@@ -70,50 +70,55 @@ You'll need Docker installed on your machine:
 
 1. **Clone or download the project** to your local machine
 
-2. **Create the environment file**  
+2. **Create the environment file**
+
    Copy `.env.TEMPLATE` to `.env` and configure your settings:
+
    ```env
-# Specific project name
-COMPOSE_PROJECT_NAME="your_project_name"
+   # Specific project name
+   COMPOSE_PROJECT_NAME="your_project_name"
 
-# Environment Variables for database.
-DB_SERVER="mysql"
-DB_ROOT_USER="your_root_user"
-DB_ROOT_PASSWORD="your_root_password"
-DB_NAME="your_db_name"
-DB_PORT=3306
+   # Environment Variables for database.
+   DB_SERVER="mysql"
+   DB_ROOT_USER="your_root_user"
+   DB_ROOT_PASSWORD="your_root_password"
+   DB_NAME="your_db_name"
+   DB_PORT=3306
 
-# For locking users
-AUTH_LOCK_MINUTES=your_desired_lock_minutes
-TZ=your_timezone
+   # For locking users
+   AUTH_LOCK_MINUTES=your_desired_lock_minutes
+   TZ=your_timezone
 
-# Nest.js
-APP_PORT=3000
-NODE_ENV=development
+   # Nest.js
+   APP_PORT=3000
+   NODE_ENV=development
 
-# Mail (Gmail SMTP)
-SMTP_HOST="smtp.gmail.com"
-SMTP_PORT=587
-SMTP_USER="your_email"
-SMTP_PASS="your_app_password"
-SMTP_FROM="Desired Name <your_email>"
+   # Mail (Gmail SMTP)
+   SMTP_HOST="smtp.gmail.com"
+   SMTP_PORT=587
+   SMTP_USER="your_email"
+   SMTP_PASS="your_app_password"
+   SMTP_FROM="Desired Name <your_email>"
 
-# JWT
-JWT_SECRET=this_is_a_secret_key_change_this
-JWT_EXPIRES_IN=3600
+   # JWT
+   JWT_SECRET=this_is_a_secret_key_change_this
+   JWT_EXPIRES_IN=3600
 
-FRONTEND_URL=http://localhost:5173
-VITE_API_BASE_URL=http://localhost:3000
+   FRONTEND_URL=http://localhost:5173
+   VITE_API_BASE_URL=http://localhost:3000
    ```
 
-3. **Start the application**  
+3. **Start the application**
+
    Open your terminal in the project folder and run:
+
    ```bash
    docker compose up --build
    ```
    The first build takes a few minutes.
 
 4. **Access the services**
+
    - **Client**: http://localhost:5173
    - **API**: http://localhost:3000
    - **phpMyAdmin**: http://localhost:8080 (server: `mysql`, username: `root`, password: `DB_ROOT_PASSWORD` from `.env`)
