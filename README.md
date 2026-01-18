@@ -165,6 +165,16 @@ Invoke-RestMethod -Uri "http://localhost:3000/content/genres"
 Invoke-RestMethod -Uri "http://localhost:3000/content/movies/search?q=matrix"
 ```
 
+### Running API Unit Tests
+
+Run these commands from the `app/` folder:
+
+```bash
+npm install         # Install test dependencies
+npm test            # Run all tests
+npm run test:cov    # With coverage
+```
+
 ### Using Your Browser
 
 For GET requests, just visit these URLs:
