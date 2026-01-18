@@ -1,4 +1,7 @@
+import { IsEmail, IsNotEmpty } from 'class-validator';
+
 export class CreateInvitationDto {
-  senderAccountId: number;
-  receiverEmail: string;
+  @IsEmail()
+  @IsNotEmpty()
+  inviteeEmail: string;
 }

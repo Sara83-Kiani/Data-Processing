@@ -22,6 +22,16 @@ export default function Login() {
       const newUrl = `${window.location.pathname}${newQuery ? `?${newQuery}` : ''}`;
       window.history.replaceState({}, '', newUrl);
     }
+
+    // Optional: show message after reset redirect: /login?reset=1
+    if (params.get('reset') === '1') {
+      setInfoMsg('Password reset successful. You can now log in.');
+
+      params.delete('reset');
+      const newQuery = params.toString();
+      const newUrl = `${window.location.pathname}${newQuery ? `?${newQuery}` : ''}`;
+      window.history.replaceState({}, '', newUrl);
+    }
   }, []);
 
   async function onSubmit(e: React.FormEvent) {
@@ -31,12 +41,8 @@ export default function Login() {
 
     try {
       const token = await loginUser(email, password);
-
-      // Minimal: store token so you can use it later for protected requests
       localStorage.setItem('accessToken', token);
-
-      // Minimal “success”: redirect to home (change if you have a different route)
-      window.location.href = '/';
+      window.location.href = '/profiles';
     } catch (err: any) {
       setErrorMsg(err?.message ?? 'Login failed.');
     } finally {
@@ -52,7 +58,12 @@ export default function Login() {
         {infoMsg ? (
           <div className="auth-info">
             <span>{infoMsg}</span>
-            <button className="auth-info-close" onClick={() => setInfoMsg('')}>
+            <button
+              type="button"
+              className="auth-info-close"
+              onClick={() => setInfoMsg('')}
+              aria-label="Close message"
+            >
               ✕
             </button>
           </div>
@@ -84,6 +95,12 @@ export default function Login() {
               autoComplete="current-password"
             />
           </label>
+
+          <div className="auth-links-row">
+            <a className="auth-link auth-link-small" href="/forgot-password">
+              Forgot password?
+            </a>
+          </div>
 
           <button className="auth-button" type="submit" disabled={loading}>
             {loading ? 'Logging in...' : 'Log in'}

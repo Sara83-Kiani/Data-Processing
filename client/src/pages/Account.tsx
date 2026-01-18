@@ -1,155 +1,164 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { createInvitation, getSubscriptionMe, listMyInvitations, subscribe } from '../services/accounts.api';
+import '../styles/account.css';
 
-interface AccountInfo {
-  accountId: number;
-  email: string;
-  registrationDate: string;
-  subscriptionId: number | null;
-  referralCode: string;
-  isTrialUsed: boolean;
-}
-
-export default function Account() {
-  const [account, setAccount] = useState<AccountInfo | null>(null);
+export default function AccountPage() {
+  const [sub, setSub] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [errorMsg, setErrorMsg] = useState('');
-  const [copySuccess, setCopySuccess] = useState(false);
+  const [err, setErr] = useState('');
+  const [msg, setMsg] = useState('');
 
-  useEffect(() => {
-    fetchAccountInfo();
-  }, []);
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [invited, setInvited] = useState<any[]>([]);
 
-  async function fetchAccountInfo() {
+  async function refresh() {
+    setLoading(true);
     try {
-      const token = localStorage.getItem('accessToken');
-      if (!token) {
-        window.location.href = '/login';
-        return;
-      }
-
-      const res = await fetch('http://localhost:3000/accounts/me', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        throw new Error(data.error || 'Failed to load account info');
-      }
-
-      setAccount(data.data);
-    } catch (err: any) {
-      setErrorMsg(err?.message || 'Failed to load account information.');
+      const s = await getSubscriptionMe();
+      setSub(s.subscription);
+      const inv = await listMyInvitations();
+      setInvited(inv);
+    } catch (e: any) {
+      setErr(e?.message ?? 'Failed to load account data');
     } finally {
       setLoading(false);
     }
   }
 
-  function copyInviteLink() {
-    if (!account?.referralCode) return;
-    
-    const inviteLink = `${window.location.origin}/register?ref=${account.referralCode}`;
-    navigator.clipboard.writeText(inviteLink);
-    setCopySuccess(true);
-    setTimeout(() => setCopySuccess(false), 2000);
+  useEffect(() => {
+    refresh();
+  }, []);
+
+  async function onSubscribe(q: 'SD' | 'HD' | 'UHD') {
+    setErr('');
+    setMsg('');
+    try {
+      const res = await subscribe(q, 'CARD');
+      setMsg(res.message ?? 'Subscription updated');
+      await refresh();
+    } catch (e: any) {
+      setErr(e?.message ?? 'Failed to subscribe');
+    }
   }
 
-  function handleLogout() {
-    localStorage.removeItem('accessToken');
-    window.location.href = '/login';
-  }
-
-  if (loading) {
-    return (
-      <div className="account-page">
-        <div className="account-card">
-          <p>Loading account information...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (errorMsg) {
-    return (
-      <div className="account-page">
-        <div className="account-card">
-          <div className="auth-error">{errorMsg}</div>
-          <button className="auth-button" onClick={() => window.location.href = '/login'}>
-            Go to Login
-          </button>
-        </div>
-      </div>
-    );
+  async function onCreateInvite(e: React.FormEvent) {
+    e.preventDefault();
+    setErr('');
+    setMsg('');
+    try {
+      const res = await createInvitation(inviteEmail);
+      setInviteEmail('');
+      setMsg(res.emailSent ? 'Invitation sent.' : 'Invitation created. (Email not sent)');
+      await refresh();
+    } catch (e: any) {
+      setErr(e?.message ?? 'Failed to create invitation');
+    }
   }
 
   return (
     <div className="account-page">
-      <div className="account-card">
-        <h1 className="account-title">My Account</h1>
+      <div className="auth-card">
+        <h1 className="auth-title">Account</h1>
 
-        <div className="account-section">
-          <h2>Account Information</h2>
-          <div className="account-info">
-            <div className="account-row">
-              <span className="account-label">Email:</span>
-              <span className="account-value">{account?.email}</span>
-            </div>
-            <div className="account-row">
-              <span className="account-label">Member since:</span>
-              <span className="account-value">
-                {account?.registrationDate 
-                  ? new Date(account.registrationDate).toLocaleDateString() 
-                  : 'N/A'}
-              </span>
-            </div>
-            <div className="account-row">
-              <span className="account-label">Subscription:</span>
-              <span className="account-value">
-                {account?.subscriptionId ? `Plan #${account.subscriptionId}` : 'No active subscription'}
-              </span>
-            </div>
-            <div className="account-row">
-              <span className="account-label">Trial used:</span>
-              <span className="account-value">{account?.isTrialUsed ? 'Yes' : 'No'}</span>
-            </div>
-          </div>
+        <div className="account-nav">
+          <a className="auth-link" href="/profiles">Back to profiles</a>
+          <a className="auth-link" href="/">Home</a>
         </div>
 
-        <div className="account-section">
-          <h2>Invite Friends</h2>
-          <p className="account-description">
-            Share your referral link with friends. When they subscribe, you both get a discount!
-          </p>
-          <div className="invite-section">
-            <div className="referral-code">
-              <span className="account-label">Your referral code:</span>
-              <span className="account-value code">{account?.referralCode || 'N/A'}</span>
+        {err ? <div className="auth-error">{err}</div> : null}
+        {msg ? <div className="auth-success">{msg}</div> : null}
+
+        {loading ? (
+          <p>Loading...</p>
+        ) : (
+          <>
+            <h2 className="account-section-title">Subscription</h2>
+
+            {sub ? (
+              <div className="account-box">
+                <div><strong>Plan:</strong> {sub.quality}</div>
+                <div><strong>Status:</strong> {sub.status}</div>
+                <div><strong>Price:</strong> {sub.price}</div>
+                <div><strong>Trial:</strong> {sub.isTrial ? 'Yes' : 'No'}</div>
+                {sub.discountAmount && Number(sub.discountAmount) > 0 ? (
+                  <div>
+                    <strong>Discount:</strong> {sub.discountAmount} until {sub.discountValidUntil ? new Date(sub.discountValidUntil).toLocaleDateString() : '—'}
+                  </div>
+                ) : (
+                  <div><strong>Discount:</strong> none</div>
+                )}
+              </div>
+            ) : (
+              <div className="account-box">
+                No subscription yet.
+              </div>
+            )}
+
+            <div className="account-plan-actions">
+              <button
+                className="auth-button"
+                type="button"
+                onClick={() => onSubscribe('SD')}
+              >
+                Choose SD
+              </button>
+              <button
+                className="auth-button"
+                type="button"
+                onClick={() => onSubscribe('HD')}
+              >
+                Choose HD
+              </button>
+              <button
+                className="auth-button"
+                type="button"
+                onClick={() => onSubscribe('UHD')}
+              >
+                Choose UHD
+              </button>
             </div>
-            <button 
-              className="auth-button secondary" 
-              onClick={copyInviteLink}
-              disabled={!account?.referralCode}
-            >
-              {copySuccess ? 'Copied!' : 'Copy Invite Link'}
-            </button>
-          </div>
-        </div>
 
-        <div className="account-section">
-          <h2>Security</h2>
-          <div className="account-actions">
-            <a href="/forgot-password" className="auth-link">
-              Change Password
-            </a>
-          </div>
-        </div>
+            <hr className="account-divider" />
 
-        <div className="account-footer">
-          <button className="auth-button danger" onClick={handleLogout}>
-            Log Out
-          </button>
-        </div>
+            <h2 className="account-section-title">Invite people</h2>
+
+            <form className="auth-form" onSubmit={onCreateInvite}>
+              <label className="auth-label">
+                Invitee email
+                <input
+                  className="auth-input"
+                  type="email"
+                  value={inviteEmail}
+                  onChange={(e) => setInviteEmail(e.target.value)}
+                  required
+                  placeholder="friend@example.com"
+                />
+              </label>
+              <button className="auth-button" type="submit">Send invitation</button>
+            </form>
+
+            <h2 className="account-section-title account-section-title-spaced">
+              Invited people
+            </h2>
+
+            {invited.length ? (
+              <div className="account-invited-list">
+                {invited.map((i) => (
+                  <div key={i.invitationId} className="account-box">
+                    <div><strong>Email:</strong> {i.inviteeEmail}</div>
+                    <div><strong>Status:</strong> {i.status}</div>
+                    <div><strong>Code:</strong> {i.invitationCode}</div>
+                    <div><strong>Discount applied:</strong> {i.discountApplied ? 'Yes' : 'No'}</div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="account-box">
+                No invitations yet.
+              </div>
+            )}
+          </>
+        )}
       </div>
     </div>
   );

@@ -158,8 +158,8 @@ INSERT INTO ProfilePreference (profile_id, classification_id, genre_id) VALUES
 
 -- Invitations
 -- New schema requires invitee_email NOT NULL; status defaults to 'PENDING' but we can mark accepted ones.
-INSERT INTO Invitation (inviter_account_id, invitee_email, invitee_account_id, invitation_code, discount_applied, status) VALUES
-(1, 'jane.smith@streamflix.com', 2, 'INV-JOHN-001', TRUE, 'ACCEPTED'),
-(2, 'bob.wilson@streamflix.com', 3, 'INV-JANE-002', FALSE, 'ACCEPTED');
+INSERT INTO Invitation (inviter_account_id, invitee_email, invitee_account_id, invitation_code, discount_amount, discount_started_at, discount_valid_until, discount_applied, status) VALUES
+(1, 'jane.smith@streamflix.com', 2, 'INV-JOHN-001', 2.00, NOW(), DATE_ADD(NOW(), INTERVAL 30 DAY), TRUE, 'ACCEPTED'),
+(2, 'bob.wilson@streamflix.com', 3, 'INV-JANE-002', 0.00, NULL, NULL, FALSE, 'ACCEPTED');
 
 SELECT 'Sample data inserted successfully!' AS Status;

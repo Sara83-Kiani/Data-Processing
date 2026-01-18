@@ -1,7 +1,8 @@
-/* Global Styles for StreamFlix */
+@import url('https://fonts.googleapis.com/css2?family=Ubuntu:ital,wght@0,300;0,400;0,500;0,700;1,300;1,400;1,500;1,700&display=swap');
+
 :root {
-  --primary-color: #e50914;
-  --primary-hover: #f40612;
+  --primary-color: #6289c4;
+  --primary-hover: #436595;
   --background-dark: #141414;
   --background-card: #1f1f1f;
   --text-primary: #ffffff;
@@ -19,7 +20,7 @@
 }
 
 body {
-  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-family: 'Ubuntu', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   background-color: var(--background-dark);
   color: var(--text-primary);
   min-height: 100vh;
@@ -95,6 +96,15 @@ body {
   cursor: pointer;
   margin-top: 24px;
   transition: background-color 0.2s;
+}
+
+.auth-page .auth-button {
+  height: auto;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1.2;
 }
 
 .auth-button:hover:not(:disabled) {
@@ -173,124 +183,18 @@ body {
 }
 
 .auth-link {
-  color: var(--text-primary);
+  color: var(--primary-color);
   text-decoration: none;
 }
 
 .auth-link:hover {
+  color: var(--primary-hover);
   text-decoration: underline;
-}
-
-/* Account Page */
-.account-page {
-  display: flex;
-  justify-content: center;
-  padding: 40px 20px;
-  min-height: 100vh;
-}
-
-.account-card {
-  background-color: var(--background-card);
-  border-radius: 4px;
-  padding: 40px;
-  width: 100%;
-  max-width: 800px;
-}
-
-.account-title {
-  font-size: 32px;
-  font-weight: 700;
-  margin-bottom: 32px;
-  color: var(--text-primary);
-}
-
-.account-section {
-  border-bottom: 1px solid var(--border-color);
-  padding: 24px 0;
-}
-
-.account-section:last-of-type {
-  border-bottom: none;
-}
-
-.account-section h2 {
-  font-size: 18px;
-  font-weight: 600;
-  margin-bottom: 16px;
-  color: var(--text-secondary);
-}
-
-.account-description {
-  color: var(--text-secondary);
-  font-size: 14px;
-  margin-bottom: 16px;
-}
-
-.account-info {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.account-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.account-label {
-  color: var(--text-secondary);
-  font-size: 14px;
-}
-
-.account-value {
-  color: var(--text-primary);
-  font-size: 14px;
-}
-
-.account-value.code {
-  font-family: monospace;
-  background-color: var(--border-color);
-  padding: 4px 8px;
-  border-radius: 4px;
-}
-
-.invite-section {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.referral-code {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.account-actions {
-  display: flex;
-  gap: 16px;
-}
-
-.account-footer {
-  margin-top: 32px;
-  padding-top: 24px;
-  border-top: 1px solid var(--border-color);
 }
 
 /* Responsive */
 @media (max-width: 600px) {
   .auth-card {
     padding: 40px 28px;
-  }
-  
-  .account-card {
-    padding: 24px;
-  }
-  
-  .account-row {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 4px;
   }
 }

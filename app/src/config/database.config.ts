@@ -11,4 +11,5 @@ export const databaseConfig: TypeOrmModuleOptions = {
   synchronize: false, // Set to false in production - we use SQL schema
   logging: process.env.NODE_ENV === 'development',
   charset: 'utf8mb4',
+  timezone: 'local',
 };

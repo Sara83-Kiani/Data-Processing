@@ -15,10 +15,10 @@ export default function ForgotPassword() {
 
     try {
       const result = await forgotPassword(email);
-      setSuccessMsg(result.message || 'If an account with that email exists, a password reset link has been sent.');
+      setSuccessMsg(result.message || 'If an account with that email exists, a password reset token has been sent.');
       setEmail('');
     } catch (err: any) {
-      setErrorMsg(err?.message || 'Failed to send reset link.');
+      setErrorMsg(err?.message || 'Failed to send reset token.');
     } finally {
       setLoading(false);
     }
@@ -29,7 +29,7 @@ export default function ForgotPassword() {
       <div className="auth-card">
         <h1 className="auth-title">Forgot Password</h1>
         <p className="auth-subtitle">
-          Enter your email address and we'll send you a link to reset your password.
+          Enter your email address and we'll send you a token to reset your password.
         </p>
 
         <form className="auth-form" onSubmit={onSubmit}>
@@ -47,11 +47,20 @@ export default function ForgotPassword() {
           </label>
 
           <button className="auth-button" type="submit" disabled={loading}>
-            {loading ? 'Sending...' : 'Send Reset Link'}
+            {loading ? 'Sending...' : 'Send Reset Token'}
           </button>
         </form>
 
-        {successMsg && <div className="auth-success">{successMsg}</div>}
+        {successMsg && (
+          <div className="auth-success">
+            {successMsg}
+            <p style={{ marginTop: '10px' }}>
+              <a className="auth-link" href="/reset-password">
+                Enter your token here
+              </a>
+            </p>
+          </div>
+        )}
         {errorMsg && <div className="auth-error">{errorMsg}</div>}
 
         <div className="auth-footer">
