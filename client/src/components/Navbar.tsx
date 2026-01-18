@@ -1,10 +1,17 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useProfile } from '../context/ProfileContext';
 
+const PROFILE_COLORS = ['#e50914', '#46d369', '#2196f3', '#ff9800', '#9c27b0', '#00bcd4'];
+
+function getProfileColor(profileId: number): string {
+  return PROFILE_COLORS[profileId % PROFILE_COLORS.length];
+}
+
 export default function Navbar() {
+  const navigate = useNavigate();
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const { activeProfile, setActiveProfile } = useProfile();
+  const { activeProfile, setActiveProfile, profiles } = useProfile();
 
   const linkStyle = {
     color: '#ccc',
@@ -13,13 +20,16 @@ export default function Navbar() {
     fontSize: 14,
   };
 
-  const profiles = [
-    { profileId: 1, name: 'Adult', image: '', age: 18, color: '#e50914' },
-    { profileId: 2, name: 'Kids', image: '', age: 10, color: '#46d369' },
-  ];
+  const currentProfile = activeProfile;
+  const currentColor = currentProfile ? getProfileColor(currentProfile.profileId) : '#e50914';
 
-  const currentProfile = activeProfile || profiles[0];
-  const currentColor = profiles.find(p => p.profileId === currentProfile.profileId)?.color || '#e50914';
+  const handleLogout = () => {
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('activeProfile');
+    setActiveProfile(null);
+    setDropdownOpen(false);
+    navigate('/login');
+  };
 
   return (
     <nav
@@ -39,8 +49,8 @@ export default function Navbar() {
           <Link to="/" style={linkStyle}>Home</Link>
           <Link to="/films" style={linkStyle}>Films</Link>
           <Link to="/series" style={linkStyle}>Series</Link>
-          <Link to="/my-list" style={linkStyle}>My List</Link>
-          <Link to="/" style={linkStyle}>History</Link>
+          <Link to="/my-list" style={linkStyle}>Watchlist</Link>
+          <Link to="/history" style={linkStyle}>History</Link>
         </div>
       </div>
 
@@ -71,7 +81,7 @@ export default function Navbar() {
               fontSize: 14,
             }}
           >
-            {currentProfile.name[0]}
+            {currentProfile?.name[0] || '?'}
           </div>
           <span style={{ color: '#fff', fontSize: 12 }}>▼</span>
         </button>
@@ -104,17 +114,17 @@ export default function Navbar() {
                   padding: '8px 12px',
                   cursor: 'pointer',
                   borderRadius: 4,
-                  backgroundColor: currentProfile.profileId === profile.profileId ? '#333' : 'transparent',
+                  backgroundColor: currentProfile?.profileId === profile.profileId ? '#333' : 'transparent',
                 }}
                 onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#333')}
-                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = currentProfile.profileId === profile.profileId ? '#333' : 'transparent')}
+                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = currentProfile?.profileId === profile.profileId ? '#333' : 'transparent')}
               >
                 <div
                   style={{
                     width: 28,
                     height: 28,
                     borderRadius: 4,
-                    backgroundColor: profile.color,
+                    backgroundColor: getProfileColor(profile.profileId),
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -126,14 +136,14 @@ export default function Navbar() {
                   {profile.name[0]}
                 </div>
                 <span style={{ color: '#fff', fontSize: 14 }}>{profile.name}</span>
-                {currentProfile.profileId === profile.profileId && (
+                {currentProfile?.profileId === profile.profileId && (
                   <span style={{ color: '#46d369', marginLeft: 'auto' }}>✓</span>
                 )}
               </div>
             ))}
             <div style={{ borderTop: '1px solid #444', marginTop: 8, paddingTop: 8 }}>
               <Link
-                to="/"
+                to="/account"
                 style={{
                   display: 'block',
                   color: '#ccc',
@@ -145,6 +155,22 @@ export default function Navbar() {
               >
                 Account
               </Link>
+              <button
+                onClick={handleLogout}
+                style={{
+                  display: 'block',
+                  width: '100%',
+                  textAlign: 'left',
+                  background: 'transparent',
+                  border: 'none',
+                  color: '#ccc',
+                  padding: '8px 12px',
+                  fontSize: 14,
+                  cursor: 'pointer',
+                }}
+              >
+                Log out
+              </button>
             </div>
           </div>
         )}

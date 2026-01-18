@@ -1,16 +1,21 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getSeriesById, type SeriesDetail, type Episode } from '../services/titles.api';
+import { addOrUpdateHistory, getHistory, type HistoryItem } from '../services/history.api';
+import { useProfile } from '../context/ProfileContext';
 import WatchlistButton from '../components/WatchlistButton';
 import ContentWarnings from '../components/ContentWarnings';
 
 export default function SeriesDetails() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { activeProfile } = useProfile();
   const [series, setSeries] = useState<SeriesDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedSeason, setSelectedSeason] = useState(1);
+  const [episodeHistory, setEpisodeHistory] = useState<Map<number, HistoryItem>>(new Map());
+  const [actionLoading, setActionLoading] = useState<number | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -23,6 +28,57 @@ export default function SeriesDetails() {
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
   }, [id]);
+
+  useEffect(() => {
+    if (!activeProfile || !series) {
+      setEpisodeHistory(new Map());
+      return;
+    }
+    getHistory(activeProfile.profileId)
+      .then((history) => {
+        const episodeIds = series.episodes?.map((ep) => ep.episodeId) || [];
+        const historyMap = new Map<number, HistoryItem>();
+        history.forEach((h) => {
+          if (h.episodeId && episodeIds.includes(h.episodeId)) {
+            historyMap.set(h.episodeId, h);
+          }
+        });
+        setEpisodeHistory(historyMap);
+      })
+      .catch(() => setEpisodeHistory(new Map()));
+  }, [activeProfile, series]);
+
+  const handleStartEpisode = async (episodeId: number) => {
+    if (!activeProfile) return;
+    setActionLoading(episodeId);
+    try {
+      const entry = await addOrUpdateHistory(activeProfile.profileId, {
+        episodeId,
+        completed: false,
+      });
+      setEpisodeHistory((prev) => new Map(prev).set(episodeId, entry));
+    } catch (err) {
+      console.error('Failed to start episode:', err);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleFinishEpisode = async (episodeId: number) => {
+    if (!activeProfile) return;
+    setActionLoading(episodeId);
+    try {
+      const entry = await addOrUpdateHistory(activeProfile.profileId, {
+        episodeId,
+        completed: true,
+      });
+      setEpisodeHistory((prev) => new Map(prev).set(episodeId, entry));
+    } catch (err) {
+      console.error('Failed to finish episode:', err);
+    } finally {
+      setActionLoading(null);
+    }
+  };
 
   if (loading) {
     return (
@@ -121,27 +177,81 @@ export default function SeriesDetails() {
             <p style={{ color: '#666' }}>No episodes available for this season.</p>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              {filteredEpisodes.map((ep) => (
-                <div
-                  key={ep.episodeId}
-                  style={{
-                    backgroundColor: '#222',
-                    padding: 16,
-                    borderRadius: 8,
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                  }}
-                >
-                  <div>
-                    <span style={{ color: '#e50914', fontWeight: 'bold', marginRight: 12 }}>
-                      {formatEpisodeCode(ep)}
-                    </span>
-                    <span style={{ color: '#fff' }}>{ep.title}</span>
+              {filteredEpisodes.map((ep) => {
+                const historyEntry = episodeHistory.get(ep.episodeId);
+                const isLoading = actionLoading === ep.episodeId;
+                return (
+                  <div
+                    key={ep.episodeId}
+                    style={{
+                      backgroundColor: '#222',
+                      padding: 16,
+                      borderRadius: 8,
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      gap: 12,
+                    }}
+                  >
+                    <div style={{ flex: 1 }}>
+                      <span style={{ color: '#e50914', fontWeight: 'bold', marginRight: 12 }}>
+                        {formatEpisodeCode(ep)}
+                      </span>
+                      <span style={{ color: '#fff' }}>{ep.title}</span>
+                    </div>
+                    <span style={{ color: '#666', fontSize: 14 }}>{ep.duration}</span>
+                    <div style={{ minWidth: 120, textAlign: 'right' }}>
+                      {!historyEntry ? (
+                        <button
+                          onClick={() => handleStartEpisode(ep.episodeId)}
+                          disabled={isLoading}
+                          style={{
+                            backgroundColor: '#46d369',
+                            color: '#fff',
+                            border: 'none',
+                            padding: '6px 12px',
+                            borderRadius: 4,
+                            fontSize: 12,
+                            fontWeight: 'bold',
+                            cursor: isLoading ? 'not-allowed' : 'pointer',
+                            opacity: isLoading ? 0.7 : 1,
+                          }}
+                        >
+                          {isLoading ? '...' : '▶ Start'}
+                        </button>
+                      ) : !historyEntry.completed ? (
+                        <button
+                          onClick={() => handleFinishEpisode(ep.episodeId)}
+                          disabled={isLoading}
+                          style={{
+                            backgroundColor: '#2196f3',
+                            color: '#fff',
+                            border: 'none',
+                            padding: '6px 12px',
+                            borderRadius: 4,
+                            fontSize: 12,
+                            fontWeight: 'bold',
+                            cursor: isLoading ? 'not-allowed' : 'pointer',
+                            opacity: isLoading ? 0.7 : 1,
+                          }}
+                        >
+                          {isLoading ? '...' : '✓ Finish'}
+                        </button>
+                      ) : (
+                        <span
+                          style={{
+                            color: '#46d369',
+                            fontSize: 12,
+                            fontWeight: 'bold',
+                          }}
+                        >
+                          ✓ Watched
+                        </span>
+                      )}
+                    </div>
                   </div>
-                  <span style={{ color: '#666', fontSize: 14 }}>{ep.duration}</span>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>

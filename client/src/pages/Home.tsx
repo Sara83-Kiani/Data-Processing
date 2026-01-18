@@ -1,8 +1,11 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { getMovies, getSeries } from '../services/titles.api';
 import { getWatchlist, type WatchlistItem } from '../services/watchlist.api';
+import { getContinueWatching, type HistoryItem } from '../services/history.api';
 import { useProfile } from '../context/ProfileContext';
 import TitleCard from '../components/TitleCard';
+import EmptyState from '../components/EmptyState';
 
 interface Movie {
   movieId: number;
@@ -23,9 +26,12 @@ interface Series {
 interface ContentRowProps {
   title: string;
   children: React.ReactNode;
+  emptyState?: React.ReactNode;
 }
 
-function ContentRow({ title, children }: ContentRowProps) {
+function ContentRow({ title, children, emptyState }: ContentRowProps) {
+  const hasChildren = React.Children.count(children) > 0;
+  
   return (
     <section style={{ marginBottom: 40 }}>
       <h2
@@ -39,27 +45,33 @@ function ContentRow({ title, children }: ContentRowProps) {
       >
         {title}
       </h2>
-      <div
-        style={{
-          display: 'flex',
-          gap: 12,
-          overflowX: 'auto',
-          paddingBottom: 16,
-          scrollbarWidth: 'thin',
-          scrollbarColor: '#555 transparent',
-        }}
-      >
-        {children}
-      </div>
+      {hasChildren ? (
+        <div
+          style={{
+            display: 'flex',
+            gap: 12,
+            overflowX: 'auto',
+            paddingBottom: 16,
+            scrollbarWidth: 'thin',
+            scrollbarColor: '#555 transparent',
+          }}
+        >
+          {children}
+        </div>
+      ) : (
+        emptyState
+      )}
     </section>
   );
 }
 
 export default function Home() {
+  const navigate = useNavigate();
   const { activeProfile } = useProfile();
   const [movies, setMovies] = useState<Movie[]>([]);
   const [series, setSeries] = useState<Series[]>([]);
   const [watchlist, setWatchlist] = useState<WatchlistItem[]>([]);
+  const [continueWatching, setContinueWatching] = useState<HistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -78,11 +90,15 @@ export default function Home() {
   useEffect(() => {
     if (!activeProfile) {
       setWatchlist([]);
+      setContinueWatching([]);
       return;
     }
     getWatchlist(activeProfile.profileId)
       .then(setWatchlist)
       .catch(() => setWatchlist([]));
+    getContinueWatching(activeProfile.profileId, 10)
+      .then(setContinueWatching)
+      .catch(() => setContinueWatching([]));
   }, [activeProfile]);
 
   if (loading) {
@@ -125,8 +141,39 @@ export default function Home() {
       </div>
 
       <div style={{ padding: '24px' }}>
-        {watchlist.length > 0 && (
-          <ContentRow title="My List">
+        {continueWatching.length > 0 && (
+          <ContentRow title="Continue Watching">
+            {continueWatching.map((item) => {
+              const isMovie = !!item.movie;
+              const content = isMovie ? item.movie : item.episode?.series;
+              if (!content) return null;
+              return (
+                <TitleCard
+                  key={item.historyId}
+                  id={isMovie ? item.movie!.movieId : item.episode!.series!.seriesId}
+                  title={isMovie ? content.title : `${item.episode?.series?.title} - S${item.episode?.seasonNumber}E${item.episode?.episodeNumber}`}
+                  type={isMovie ? 'movie' : 'series'}
+                  classification={content.classification?.name}
+                  progress={item.resumePosition}
+                />
+              );
+            })}
+          </ContentRow>
+        )}
+
+        {activeProfile && (
+          <ContentRow
+            title="My List"
+            emptyState={
+              <EmptyState
+                icon="📺"
+                title="No items yet"
+                description="Add movies and series to your list to see them here"
+                actionLabel="Browse Content"
+                onAction={() => navigate('/films')}
+              />
+            }
+          >
             {watchlist.map((item) => {
               const isMovie = !!item.movie;
               const content = isMovie ? item.movie : item.series;

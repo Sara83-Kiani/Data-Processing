@@ -7,9 +7,10 @@ import { AccountsModule } from './modules/accounts/accounts.module';
 import { ProfilesModule } from './modules/profiles/profiles.module';
 import { ContentModule } from './modules/content/content.module';
 import { InvitationsModule } from './modules/invitations/invitations.module';
-import { MailModule } from './modules/mail/mail.module';
-import { WatchlistModule } from './modules/watchlist/watchlist.module';
 import { SubscriptionsModule } from './modules/subscriptions/subscriptions.module';
+import { MailModule } from './modules/mail/mail.module';
+import { HistoryModule } from './modules/history/history.module';
+import { WatchlistModule } from './modules/watchlist/watchlist.module';
 
 @Module({
   imports: [
@@ -34,8 +35,9 @@ import { SubscriptionsModule } from './modules/subscriptions/subscriptions.modul
     ProfilesModule,
     ContentModule,
     InvitationsModule,
-    WatchlistModule,
     SubscriptionsModule,
+    HistoryModule,
+    WatchlistModule,
   ],
 })
 export class AppModule {}

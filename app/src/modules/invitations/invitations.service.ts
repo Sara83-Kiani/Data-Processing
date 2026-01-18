@@ -1,5 +1,4 @@
 import { Injectable } from '@nestjs/common';
-<<<<<<< HEAD
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { randomUUID } from 'crypto';
@@ -48,8 +47,3 @@ export class InvitationsService {
     });
   }
 }
-=======
-
-@Injectable()
-export class InvitationsService {}
->>>>>>> d503f7e7 (Add watchlist feature, content warnings, and UI improvements)

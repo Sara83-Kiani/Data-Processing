@@ -255,9 +255,6 @@ CREATE TABLE IF NOT EXISTS `Watchlist` (
     episode_id INT(11),
     added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY(watchlist_id),
-    -- Unique constraints: a profile can only add a movie/series once
-    UNIQUE KEY unique_profile_movie (profile_id, movie_id),
-    UNIQUE KEY unique_profile_series (profile_id, series_id),
     FOREIGN KEY(profile_id)
         REFERENCES Profile(profile_id) 
         ON UPDATE CASCADE 
@@ -278,17 +275,17 @@ CREATE TABLE IF NOT EXISTS `Watchlist` (
 
 -- a watchlist item must point either to:
 -- a movie (movie_id NOT NULL), OR
--- a specific episode (series_id NOT NULL AND episode_id NOT NULL).
--- If movie_id is NULL, then BOTH series_id and episode_id must be non-NULL.
+-- a series (series_id NOT NULL), optionally with episode_id.
+-- At least one of movie_id or series_id must be non-NULL.
 DELIMITER //
 
 CREATE TRIGGER watchlist_check_before_insert
 BEFORE INSERT ON Watchlist
 FOR EACH ROW
 BEGIN
-    IF (NEW.movie_id IS NULL AND (NEW.series_id IS NULL OR NEW.episode_id IS NULL)) THEN
+    IF (NEW.movie_id IS NULL AND NEW.series_id IS NULL) THEN
         SIGNAL SQLSTATE '45000'
-            SET MESSAGE_TEXT = 'Watchlist item must reference a movie or a (series, episode) pair';
+            SET MESSAGE_TEXT = 'Watchlist item must reference a movie or a series';
     END IF;
 END //
 
@@ -296,13 +293,14 @@ CREATE TRIGGER watchlist_check_before_update
 BEFORE UPDATE ON Watchlist
 FOR EACH ROW
 BEGIN
-    IF (NEW.movie_id IS NULL AND (NEW.series_id IS NULL OR NEW.episode_id IS NULL)) THEN
+    IF (NEW.movie_id IS NULL AND NEW.series_id IS NULL) THEN
         SIGNAL SQLSTATE '45000'
-            SET MESSAGE_TEXT = 'Watchlist item must reference a movie or a (series, episode) pair';
+            SET MESSAGE_TEXT = 'Watchlist item must reference a movie or a series';
     END IF;
 END //
 
 DELIMITER ;
+
 
 -- Watch History
 CREATE TABLE IF NOT EXISTS `WatchHistory` (
@@ -351,36 +349,6 @@ BEGIN
     IF (NEW.movie_id IS NULL AND NEW.episode_id IS NULL) THEN
         SIGNAL SQLSTATE '45000'
             SET MESSAGE_TEXT = 'Watch history item must reference a movie or an episode';
-    END IF;
-END //
-
-DELIMITER ;
-
--- Auto-remove from watchlist when movie is fully watched
--- StreamFlix rule: completed titles should disappear from watchlist
-DELIMITER //
-
-CREATE TRIGGER watchlist_auto_remove_on_movie_complete
-AFTER UPDATE ON WatchHistory
-FOR EACH ROW
-BEGIN
-    -- If a movie watch is marked as completed, remove it from watchlist
-    IF NEW.completed = TRUE AND NEW.movie_id IS NOT NULL THEN
-        DELETE FROM Watchlist 
-        WHERE profile_id = NEW.profile_id 
-          AND movie_id = NEW.movie_id;
-    END IF;
-END //
-
-CREATE TRIGGER watchlist_auto_remove_on_movie_complete_insert
-AFTER INSERT ON WatchHistory
-FOR EACH ROW
-BEGIN
-    -- If a movie watch is inserted as completed, remove it from watchlist
-    IF NEW.completed = TRUE AND NEW.movie_id IS NOT NULL THEN
-        DELETE FROM Watchlist 
-        WHERE profile_id = NEW.profile_id 
-          AND movie_id = NEW.movie_id;
     END IF;
 END //
 

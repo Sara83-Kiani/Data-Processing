@@ -88,30 +88,7 @@ export class SubscriptionsService {
     if (inv.discountValidUntil.getTime() <= now.getTime()) return null;
     if (!inv.discountAmount || Number(inv.discountAmount) <= 0) return null;
 
-<<<<<<< HEAD
     return { amount: Number(inv.discountAmount).toFixed(2), validUntil: inv.discountValidUntil };
-=======
-    // only once per account
-    if (await this.hasUsedDiscount(inviterId)) return;
-    if (await this.hasUsedDiscount(inviteeId)) return;
-
-    const inviter = await this.accountRepo.findOne({ where: { accountId: inviterId }, relations: ['subscription'] });
-    const invitee = await this.accountRepo.findOne({ where: { accountId: inviteeId }, relations: ['subscription'] });
-    if (!inviter?.subscription || !invitee?.subscription) return;
-
-    const validUntil = new Date(Date.now() + VALID_DAYS * 24 * 60 * 60 * 1000);
-
-    inviter.subscription.discountAmount = DISCOUNT_AMOUNT;
-    inviter.subscription.discountValidUntil = validUntil;
-
-    invitee.subscription.discountAmount = DISCOUNT_AMOUNT;
-    invitee.subscription.discountValidUntil = validUntil;
-
-    await this.subRepo.save([inviter.subscription, invitee.subscription]);
-
-    invitation.discountApplied = true;
-    await this.invitationRepo.save(invitation);
->>>>>>> d503f7e7 (Add watchlist feature, content warnings, and UI improvements)
   }
 
   async subscribe(accountId: number, dto: SubscribeDto) {
@@ -203,13 +180,8 @@ export class SubscriptionsService {
           isTrial,
           trialStartDate: trialStart,
           trialEndDate: trialEnd,
-<<<<<<< HEAD
           discountAmount: discountToApply ? discountToApply.amount : '0.00',
           discountValidUntil: discountToApply ? discountToApply.validUntil : null,
-=======
-          discountAmount: 0,
-          discountValidUntil: null,
->>>>>>> d503f7e7 (Add watchlist feature, content warnings, and UI improvements)
           startDate: now,
           endDate: null,
           status: 'ACTIVE',

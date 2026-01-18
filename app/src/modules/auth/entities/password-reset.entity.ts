@@ -1,10 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, CreateDateColumn } from 'typeorm';
 import { Account } from '../../accounts/entities/accounts.entity';
 
-/**
- * PasswordReset Entity
- * Stores password reset tokens for account recovery
- */
 @Entity('PasswordReset')
 export class PasswordReset {
   @PrimaryGeneratedColumn({ name: 'pass_reset_id' })
@@ -29,16 +25,10 @@ export class PasswordReset {
   @JoinColumn({ name: 'account_id' })
   account: Account;
 
-  /**
-   * Check if token is expired
-   */
   isExpired(): boolean {
     return new Date() > this.expiresAt;
   }
 
-  /**
-   * Check if token is valid (not used and not expired)
-   */
   isValid(): boolean {
     return !this.isUsed && !this.isExpired();
   }

@@ -172,4 +172,104 @@ export class ContentService {
 
     return series;
   }
+
+  /**
+   * Create a new movie
+   */
+  async createMovie(data: {
+    title: string;
+    description: string;
+    duration?: string;
+    genreId: number;
+    classificationId: number;
+  }): Promise<Movie> {
+    const movie = this.movieRepository.create({
+      title: data.title,
+      description: data.description,
+      duration: data.duration || '01:30:00',
+      genreId: data.genreId,
+      classificationId: data.classificationId,
+    });
+    return this.movieRepository.save(movie);
+  }
+
+  /**
+   * Create a new series
+   */
+  async createSeries(data: {
+    title: string;
+    description: string;
+    seasons?: number;
+    genreId: number;
+    classificationId: number;
+  }): Promise<Series> {
+    const series = this.seriesRepository.create({
+      title: data.title,
+      description: data.description,
+      seasons: data.seasons || 1,
+      genreId: data.genreId,
+      classificationId: data.classificationId,
+    });
+    return this.seriesRepository.save(series);
+  }
+
+  /**
+   * Create a new episode
+   */
+  async createEpisode(data: {
+    seriesId: number;
+    title: string;
+    duration?: string;
+    seasonNumber: number;
+    episodeNumber: number;
+  }): Promise<Episode> {
+    const series = await this.seriesRepository.findOne({
+      where: { seriesId: data.seriesId },
+    });
+    if (!series) {
+      throw new NotFoundException(`Series with ID ${data.seriesId} not found`);
+    }
+
+    const episode = this.episodeRepository.create({
+      seriesId: data.seriesId,
+      title: data.title,
+      duration: data.duration || '00:45:00',
+      seasonNumber: data.seasonNumber,
+      episodeNumber: data.episodeNumber,
+    });
+    return this.episodeRepository.save(episode);
+  }
+
+  /**
+   * Delete a movie
+   */
+  async deleteMovie(id: number): Promise<void> {
+    const movie = await this.movieRepository.findOne({ where: { movieId: id } });
+    if (!movie) {
+      throw new NotFoundException(`Movie with ID ${id} not found`);
+    }
+    await this.movieRepository.delete({ movieId: id });
+  }
+
+  /**
+   * Delete a series
+   */
+  async deleteSeries(id: number): Promise<void> {
+    const series = await this.seriesRepository.findOne({ where: { seriesId: id } });
+    if (!series) {
+      throw new NotFoundException(`Series with ID ${id} not found`);
+    }
+    await this.seriesRepository.delete({ seriesId: id });
+  }
+
+  /**
+   * Delete an episode
+   */
+  async deleteEpisode(id: number): Promise<void> {
+    const episode = await this.episodeRepository.findOne({ where: { episodeId: id } });
+    if (!episode) {
+      throw new NotFoundException(`Episode with ID ${id} not found`);
+    }
+    await this.episodeRepository.delete({ episodeId: id });
+  }
 }
